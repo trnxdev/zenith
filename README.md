@@ -16,3 +16,5 @@
 - [ ] Ctrl-F to search stuff around the file
 - [ ] .gitignore Support for Ctrl + O
 - [ ] Maybe better Input parsing?
+
+<sub>The tests were perfomed on a kitty (w/ bash) terminal.</sub>

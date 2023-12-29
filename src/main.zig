@@ -33,20 +33,18 @@ pub fn main() !void {
     defer tabs.deinit();
     defer for (tabs.items) |stab| stab.deinit();
 
-    var tab = try Tab.init(allocator, 0); // Freed by the code above
-    try tabs.append(tab);
-
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    if (args.len >= 2) {
+    var tab = if (args.len >= 2) v: {
         const file_path = args[1];
-
-        tab.deinit();
-        tab = try Tab.open_from_file(allocator, 0, file_path);
-    } else {
-        try tab.lines.append(globals.Line{}); // A tab requires atleast one line
-    }
+        break :v try Tab.open_from_file(allocator, 0, file_path);
+    } else brk: {
+        const inside_tab = try Tab.init(allocator, 0);
+        try inside_tab.lines.append(globals.Line{}); // A tab requires atleast one line
+        break :brk inside_tab;
+    };
+    try tabs.append(tab);
 
     o: while (true) {
         try tab.draw(tabs, std.io.getStdOut().writer());

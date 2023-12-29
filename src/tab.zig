@@ -62,11 +62,16 @@ pub fn open_from_file(allocator: std.mem.Allocator, index: usize, path: []u8) !*
     defer file.close();
 
     const reader = file.reader();
+    var wrote: bool = false;
 
     while (try reader.readUntilDelimiterOrEofAlloc(allocator, '\n', std.math.maxInt(usize))) |line| {
+        wrote = true;
         defer allocator.free(line);
         try tab.lines.append(try unicode.toUnicodeList(allocator, line));
     }
+
+    if (!wrote)
+        try tab.lines.append(globals.Line{});
 
     // I wish there was std.fs.File.realpathAlloc
     var fpat: [std.fs.MAX_PATH_BYTES]u8 = undefined;
