@@ -15,3 +15,4 @@
 - [ ] Add colors to the Terminal
 - [ ] Ctrl-F to search stuff around the file
 - [ ] .gitignore Support for Ctrl + O
+- [ ] Maybe better Input parsing?
