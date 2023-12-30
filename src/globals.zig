@@ -42,7 +42,21 @@ pub fn modify_line(
                 return .none;
 
             saved.* = false;
+
+            if (input.modifiers.ctrl) {
+                const old = cursor.x;
+                cursor.ctrl_move(line, .Left);
+                const now = cursor.x;
+
+                std.debug.assert(now <= old);
+                for (0..old - now + 1) |_| {
+                    _ = line.orderedRemove(cursor.x);
+                }
+                return .none;
+            }
+
             _ = line.orderedRemove(cursor.x);
+            return .none;
         },
         .char => |c| {
             try line.insert(allocator, cursor.x, c);

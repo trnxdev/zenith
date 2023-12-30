@@ -434,7 +434,8 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) !globals.modify
         .backspace => {
             if (!self.can_move(.Left) and self.can_move(.Up)) {
                 self.saved = false;
-                const removed = self.lines.orderedRemove(self.cursor.y);
+                var removed = self.lines.orderedRemove(self.cursor.y);
+                defer removed.deinit(self.allocator);
                 self.cursor.y -= 1;
                 self.cursor.x = self.current_line().items.len;
                 try self.current_line().appendSlice(self.allocator, removed.items);
