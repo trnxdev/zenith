@@ -13,6 +13,7 @@
 - Ctrl + L, move to the right tab
 - Ctrl + P, terminal
 - Ctrl + W, close the tab
+- Esc, To [exit](https://stackoverflow.com/questions/11828270) the editor, terminal or file opener
 
 ## To-Do:
 - [ ] Improve the Syntax Highlighting
