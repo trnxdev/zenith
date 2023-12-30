@@ -43,6 +43,7 @@ const Inputs = std.ComptimeStringMap(@This(), .{
     .{ str(std.ascii.control_code.dc3), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 's' } } },
     .{ str(std.ascii.control_code.si), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'o' } } },
     .{ str(std.ascii.control_code.dle), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'p' } } },
+    .{ str(std.ascii.control_code.etb), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'w' } } },
     .{ str(10), .{ .key = .enter } },
     .{ str('\t'), .{ .key = .tab } },
     // Arrows

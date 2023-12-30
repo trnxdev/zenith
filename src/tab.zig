@@ -363,23 +363,38 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) !globals.modify
         return .none;
     }
 
+    if (input.isHotBind(.Ctrl, 'w')) {
+        if (tabs.items.len == 1) {
+            return .none;
+        }
+
+        if (tabs.items.len > self.index) {
+            for (tabs.items[self.index + 1 ..]) |i| {
+                i.index -= 1;
+            }
+        }
+
+        _ = tabs.orderedRemove(self.index);
+        defer self.deinit();
+
+        return .{
+            .focus = globals.sub_1_ignore_overflow(self.index),
+        };
+    }
+
     switch (input.key) {
         .arrow => |a| {
             switch (a) {
                 .Up, .Down => {
-                    if (!input.modifiers.ctrl) {
-                        const previous = self.current_line();
+                    const previous = self.current_line();
 
-                        if (self.cursor.move_bl(self.lines_len(), self.lines_len(), a)) {
-                            if (self.cursor.x == previous.items.len or self.cursor.x > self.current_line().items.len) {
-                                self.cursor.x = self.current_line().items.len;
-                            }
+                    if (self.cursor.move_bl(self.lines_len(), self.lines_len(), a)) {
+                        if (self.cursor.x == previous.items.len or self.cursor.x > self.current_line().items.len) {
+                            self.cursor.x = self.current_line().items.len;
                         }
-
-                        return .none;
                     }
 
-                    self.cursor.ctrl_move(undefined, a);
+                    return .none;
                 },
                 .Left => {
                     if (!self.can_move(.Left) and self.can_move(.Up)) {

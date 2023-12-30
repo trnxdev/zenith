@@ -9,6 +9,10 @@
 - Ctrl + O, open a file from cwd
 - Ctrl + N, new empty tab
 - Ctrl + S, save a file
+- Ctrl + K, move to the left tab
+- Ctrl + L, move to the right tab
+- Ctrl + P, terminal
+- Ctrl + W, close the tab
 
 ## To-Do:
 - [ ] Improve the Syntax Highlighting
