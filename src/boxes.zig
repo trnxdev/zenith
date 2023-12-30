@@ -94,6 +94,10 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         const input = try Input.parse_stdin();
         switch (try box.modify(input, searched_paths.items.len)) {
             .focus => {
+                if (searched_paths.items.len == 0) {
+                    continue :o;
+                }
+
                 const focused = searched_paths.items[box.input_cursor.y];
                 const focused_utf8 = try unicode.toUtf8Alloc(tab.allocator, focused);
                 defer tab.allocator.free(focused_utf8);
