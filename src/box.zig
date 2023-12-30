@@ -73,12 +73,7 @@ pub fn draw(self: *@This(), options: [][]globals.Char, writer: anytype) !void {
     const stdout = buffered.writer();
     const size = try globals.getTerminalSize();
 
-    if (size.cols <= 14 * 2) {
-        try stdout.writeAll("Box cannot be rendered, please resize your terminal.");
-        return;
-    }
-
-    if (size.rows <= 6) {
+    if (size.cols <= 14 * 2 or size.rows <= 6) {
         try stdout.writeAll("Box cannot be rendered, please resize your terminal.");
         return;
     }
@@ -129,7 +124,23 @@ pub fn draw(self: *@This(), options: [][]globals.Char, writer: anytype) !void {
             const utf8_option = try unicode.toUtf8Alloc(self.allocator, option);
             defer self.allocator.free(utf8_option);
 
-            draw_cursor.x += try stdout.write(utf8_option);
+            inner: for (utf8_option) |c| {
+                if (draw_cursor.x > size.cols - 5) {
+                    try stdout.writeAll(Style.Value(.Reset));
+                    if (self.highlight_selected and i == self.input_cursor.y) {
+                        try stdout.writeAll(Style.Value(.GrayBG));
+                    } else {
+                        try stdout.writeAll(Style.Value(.WhiteBG));
+                    }
+                    try stdout.writeByte('>');
+                    try stdout.writeAll(Style.Value(.Reset));
+                    draw_cursor.x = size.cols - 3;
+                    break :inner;
+                }
+
+                draw_cursor.x += try stdout.write(&[_]u8{c});
+            }
+
             if (self.highlight_selected and i == self.input_cursor.y) {
                 try Centered.draw_right_border_col(&draw_cursor, stdout, size.cols, .WhiteBG);
             } else {
