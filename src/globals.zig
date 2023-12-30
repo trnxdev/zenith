@@ -101,7 +101,7 @@ pub inline fn usize_from(x: anytype) usize {
 }
 
 pub fn sub_1_ignore_overflow(i: anytype) @TypeOf(i) {
-    return if (i == 0) 0 else i;
+    return if (i == 0) 0 else i - 1;
 }
 
 pub inline fn num_strlen(nm: anytype) @TypeOf(nm) {

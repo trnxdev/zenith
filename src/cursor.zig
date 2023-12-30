@@ -39,6 +39,10 @@ pub fn write_unsafe(self: *@This(), writer: anytype) !void {
 }
 
 pub fn ctrl_move(self: *@This(), line: *globals.Line, direction: globals.Direction) void {
+    if (line.items.len == 0) {
+        return;
+    }
+
     if (isCtrlSpecial(line.items[sub_1_ignore_overflow(self.x)])) {
         o: while (isCtrlSpecial(line.items[sub_1_ignore_overflow(self.x)])) {
             if (!self.can_move(1, line.items.len, direction)) {
