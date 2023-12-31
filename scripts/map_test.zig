@@ -6,7 +6,7 @@ pub fn main() !void {
     const old = try std.os.tcgetattr(stdin_fd);
     var new = old;
 
-    new.lflag &= ~(std.os.linux.ICANON | std.os.linux.ECHO);
+    new.lflag &= ~(std.os.linux.ICANON | std.os.linux.ECHO | std.os.linux.ISIG);
     new.iflag &= ~std.os.linux.IXON;
 
     try std.os.tcsetattr(stdin_fd, std.os.TCSA.FLUSH, new);
@@ -16,5 +16,9 @@ pub fn main() !void {
         var buf: [8]u8 = undefined;
         const read = try std.io.getStdIn().reader().read(&buf);
         try std.fs.cwd().writeFile("key.txt", buf[0..read]);
+
+        if (buf[0] == std.ascii.control_code.esc) {
+            return;
+        }
     }
 }

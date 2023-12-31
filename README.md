@@ -13,6 +13,7 @@
 - Ctrl + L, move to the right tab
 - Ctrl + P, terminal
 - Ctrl + W, close the tab
+- Ctrl + Z, to undo last change
 - Esc, To [exit](https://stackoverflow.com/questions/11828270) the editor, terminal or file opener
 
 ## To-Do:
@@ -21,7 +22,8 @@
 - [ ] Ctrl-F to search stuff around the file
 - [ ] .gitignore Support for Ctrl + O
 - [ ] Maybe better Input parsing?
-- [ ] Ctrl + Z, Ctrl + Y to Undo/Redo
+- [ ] Ctrl + Y to Undo/Redo
+- [ ] Add support for Ctrl + Z to undo text prompts (also the text in boxes) 
 - [ ] Text Selection (w/ Ctrl + A)
 
 <sub>The tests were perfomed on a kitty (w/ bash) terminal.</sub>

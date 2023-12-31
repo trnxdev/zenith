@@ -92,7 +92,10 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         try buffered_overlay.flush();
 
         const input = try Input.parse_stdin();
-        switch (try box.modify(input, searched_paths.items.len)) {
+        var actions = globals.Actions.init(tab.allocator);
+        defer actions.deinit();
+
+        switch (try box.modify(input, searched_paths.items.len, &actions)) {
             .focus => {
                 if (searched_paths.items.len == 0) {
                     continue :o;
@@ -142,6 +145,9 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
     }
 
     o: while (true) {
+        var actions = globals.Actions.init(tab.allocator);
+        defer actions.deinit();
+
         j: while (true) {
             var buffered_overlay = std.io.bufferedWriter(std.io.getStdOut().writer());
             const overlay = buffered_overlay.writer();
@@ -157,7 +163,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
             try buffered_overlay.flush();
 
             const input = try Input.parse_stdin();
-            switch (try box.modify(input, buffer.items.len)) {
+            switch (try box.modify(input, buffer.items.len, &actions)) {
                 .none => {},
                 .exit => break :o,
                 .focus => break :j,

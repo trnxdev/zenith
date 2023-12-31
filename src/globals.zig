@@ -5,6 +5,7 @@ const Tab = @import("tab.zig");
 const Input = @import("input.zig");
 const Style = @import("styles.zig");
 const unicode = @import("unicode.zig");
+const Action = @import("action.zig").Action;
 
 pub const no_filename = "Unnamed";
 pub const no_filepath = "No File Path";
@@ -26,6 +27,7 @@ pub const modify_response = union(enum) {
     focus: usize,
 };
 pub const Tabs = std.ArrayList(*Tab);
+pub const Actions = std.ArrayList(Action);
 
 pub fn modify_line(
     allocator: std.mem.Allocator,
@@ -33,6 +35,7 @@ pub fn modify_line(
     cursor: *Cursor,
     input: Input,
     saved: *bool,
+    actions: *Actions,
 ) !modify_response {
     switch (input.key) {
         .escape => return .exit,
@@ -52,13 +55,16 @@ pub fn modify_line(
                 for (0..old - now + 1) |_| {
                     _ = line.orderedRemove(cursor.x);
                 }
+                // TODO: Actions
                 return .none;
             }
 
+            try actions.append(.{ .del_char = .{ .x = cursor.x, .y = cursor.y, .c = line.items[cursor.x] } });
             _ = line.orderedRemove(cursor.x);
             return .none;
         },
         .char => |c| {
+            try actions.append(.{ .insert_char = .{ .x = cursor.x, .y = cursor.y, .c = c } });
             try line.insert(allocator, cursor.x, c);
             saved.* = false;
             cursor.x += 1;
@@ -134,6 +140,9 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
     var line = Line{};
     defer line.deinit(allocator);
 
+    var actions = Actions.init(allocator);
+    defer actions.deinit();
+
     var empty_bool = false; // Unused
     var cursor = std.mem.zeroes(Cursor);
 
@@ -156,7 +165,7 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
             break :o;
         }
 
-        switch (try modify_line(allocator, &line, &cursor, input, &empty_bool)) {
+        switch (try modify_line(allocator, &line, &cursor, input, &empty_bool, &actions)) {
             .exit => return null,
             .none => {},
             .focus => unreachable,

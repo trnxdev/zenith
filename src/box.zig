@@ -37,7 +37,7 @@ pub fn deinit(self: *@This()) void {
 }
 
 // if this returns focus it's always 0 (focus = enter pressed)
-pub fn modify(self: *@This(), input: Input, options: usize) !globals.modify_response {
+pub fn modify(self: *@This(), input: Input, options: usize, actions: *globals.Actions) !globals.modify_response {
     var empty_bool: bool = false;
 
     return switch (input.key) {
@@ -54,6 +54,7 @@ pub fn modify(self: *@This(), input: Input, options: usize) !globals.modify_resp
                 self.input_cursor,
                 input,
                 &empty_bool,
+                actions,
             ),
         },
         else => try globals.modify_line(
@@ -62,6 +63,7 @@ pub fn modify(self: *@This(), input: Input, options: usize) !globals.modify_resp
             self.input_cursor,
             input,
             &empty_bool,
+            actions,
         ),
     };
 }
