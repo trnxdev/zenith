@@ -336,6 +336,15 @@ pub fn save(self: *@This()) !globals.modify_response {
 }
 
 pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!globals.modify_response {
+    if (input.isHotBind(.Ctrl, 'd')) { // Duplicate Line
+        var new_line = globals.Line{};
+        errdefer new_line.deinit(self.allocator);
+
+        try new_line.appendSlice(self.allocator, self.current_line().items);
+        try self.lines.insert(self.cursor.y, new_line);
+        return .none;
+    }
+
     if (input.isHotBind(.Ctrl, 'k')) { // Move to the Tab at the Left
         if (tabs.items.len == 1)
             return .none;

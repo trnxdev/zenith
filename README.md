@@ -13,7 +13,8 @@
 - Ctrl + L, move to the right tab
 - Ctrl + P, terminal
 - Ctrl + W, close the tab
-- Ctrl + Z, to undo last change
+- Ctrl + Z, undo last change
+- Ctrl + D, duplicate Line
 - Alt  + J, jump to a line
 - Esc, To [exit](https://stackoverflow.com/questions/11828270) the editor, terminal or file opener
 
@@ -25,7 +26,6 @@
 - [ ] Maybe better Input parsing?
 - [ ] Ctrl + Y to Undo/Redo
 - [ ] Text Selection (w/ Ctrl + A)
-- [ ] Ctrl + D to Duplicate Line
 - [ ] Alt + (Arrow) to move arround a Line
 - [ ] Formatting
 - [ ] Handle long Box queries
