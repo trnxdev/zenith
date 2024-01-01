@@ -52,18 +52,20 @@ pub fn modify(self: *@This(), input: Input, options: usize, actions: *globals.Ac
                 self.allocator,
                 self.input,
                 self.input_cursor,
-                input,
                 &empty_bool,
                 actions,
+                input,
+                struct {},
             ),
         },
         else => try globals.modify_line(
             self.allocator,
             self.input,
             self.input_cursor,
-            input,
             &empty_bool,
             actions,
+            input,
+            struct {},
         ),
     };
 }

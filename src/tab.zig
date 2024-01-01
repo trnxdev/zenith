@@ -328,41 +328,7 @@ pub fn save(self: *@This()) !globals.modify_response {
     return .none;
 }
 
-// TODO: support this for modify_line
-pub fn undo(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
-    if (self.actions.items.len == 0) {
-        return .none;
-    }
-
-    const execute_action = self.actions.items[self.actions.items.len - 1];
-    defer self.actions.items.len -= 1;
-
-    return switch (execute_action) {
-        .insert_char => |i| {
-            self.cursor.x = if (self.cursor.x > i.x) i.x + 1 else i.x;
-            self.cursor.y = i.y;
-            const response = try self.modify(tabs, .{ .key = .backspace });
-            std.debug.assert(self.actions.items.len >= 1 and self.actions.getLast() == .del_char);
-            self.actions.items.len -= 1; // Remove last delete_char
-            return response;
-        },
-        .del_char => |d| {
-            self.cursor.x = d.x;
-            self.cursor.y = d.y;
-            const response = try self.modify(tabs, .{ .key = .{ .char = d.c } });
-            std.debug.assert(self.actions.items.len >= 1 and self.actions.getLast() == .insert_char);
-            self.actions.items.len -= 1; // Remove last insert_char
-            return response;
-        },
-        else => unreachable,
-    };
-}
-
 pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!globals.modify_response {
-    if (input.isHotBind(.Ctrl, 'z')) { // Undo, TODO: Redo
-        return try self.undo(tabs);
-    }
-
     if (input.isHotBind(.Ctrl, 'k')) { // Move to the Tab at the Left
         if (tabs.items.len == 1)
             return .none;
@@ -482,7 +448,7 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
         else => {},
     }
 
-    return try globals.modify_line(self.allocator, self.current_line(), self.cursor, input, &self.saved, &self.actions);
+    return try globals.modify_line(self.allocator, self.current_line(), self.cursor, &self.saved, &self.actions, input, self);
 }
 
 // Some small little functions to make it easier

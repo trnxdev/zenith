@@ -29,14 +29,76 @@ pub const modify_response = union(enum) {
 pub const Tabs = std.ArrayList(*Tab);
 pub const Actions = std.ArrayList(Action);
 
+pub fn undo(allocator: std.mem.Allocator, line: *Line, cursor: *Cursor, saved: *bool, actions: *Actions, external: anytype) !modify_response {
+    if (actions.items.len == 0) {
+        return .none;
+    }
+
+    const execute_action = actions.items[actions.items.len - 1];
+    actions.items.len -= 1;
+
+    return switch (execute_action) {
+        .insert_char => |i| {
+            cursor.x = i.x + 1;
+            cursor.y = i.y;
+            var customline = line;
+            if (@TypeOf(external) == *Tab) {
+                customline = &external.lines.items[cursor.y];
+            }
+            const response: modify_response = try modify_line(
+                allocator,
+                customline,
+                cursor,
+                saved,
+                actions,
+                .{ .key = .backspace },
+                external,
+            );
+            if (actions.getLast() == .del_char) {
+                _ = actions.pop(); // Remove last delete_char
+            }
+            return response;
+        },
+        .del_char => |d| {
+            cursor.x = d.x;
+            cursor.y = d.y;
+
+            var customline = line;
+            if (@TypeOf(external) == *Tab) {
+                customline = &external.lines.items[cursor.y];
+            }
+
+            const response = try modify_line(
+                allocator,
+                customline,
+                cursor,
+                saved,
+                actions,
+                .{ .key = .{ .char = d.c } },
+                external,
+            );
+            if (actions.getLast() == .insert_char) {
+                _ = actions.pop(); // Remove last insert_char
+            }
+            return response;
+        },
+        else => unreachable,
+    };
+}
+
 pub fn modify_line(
     allocator: std.mem.Allocator,
     line: *Line,
     cursor: *Cursor,
-    input: Input,
     saved: *bool,
     actions: *Actions,
-) !modify_response {
+    input: Input,
+    external: anytype,
+) anyerror!modify_response {
+    if (input.isHotBind(.Ctrl, 'z')) { // Undo, TODO: Redo
+        return try undo(allocator, line, cursor, saved, actions, external);
+    }
+
     switch (input.key) {
         .escape => return .exit,
         .enter => return .none,
@@ -165,7 +227,7 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
             break :o;
         }
 
-        switch (try modify_line(allocator, &line, &cursor, input, &empty_bool, &actions)) {
+        switch (try modify_line(allocator, &line, &cursor, &empty_bool, &actions, input, null)) {
             .exit => return null,
             .none => {},
             .focus => unreachable,

@@ -65,6 +65,9 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         );
     }
 
+    var actions = globals.Actions.init(tab.allocator);
+    defer actions.deinit();
+
     o: while (true) {
         var buffered_overlay = std.io.bufferedWriter(std.io.getStdOut().writer());
         const overlay = buffered_overlay.writer();
@@ -92,8 +95,6 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         try buffered_overlay.flush();
 
         const input = try Input.parse_stdin();
-        var actions = globals.Actions.init(tab.allocator);
-        defer actions.deinit();
 
         switch (try box.modify(input, searched_paths.items.len, &actions)) {
             .focus => {

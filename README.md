@@ -23,8 +23,12 @@
 - [ ] .gitignore Support for Ctrl + O
 - [ ] Maybe better Input parsing?
 - [ ] Ctrl + Y to Undo/Redo
-- [ ] Add support for Ctrl + Z to undo text prompts (also the text in boxes) 
 - [ ] Text Selection (w/ Ctrl + A)
+- [ ] Ctrl + D to Duplicate Line
+- [ ] Alt + (Arrow) to move arround a Line
+- [ ] Formatting
+- [ ] Handle long Box queries
+- [ ] Make the code more readable
 
 <sub>The tests were perfomed on a kitty (w/ bash) terminal.</sub>
 <sub>Ctrl + Backspace Does not work in VSCode Terminal, this is not a bug.</sub>
