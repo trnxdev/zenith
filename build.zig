@@ -10,11 +10,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
-    if (optimize != .Debug) {
-        exe.linkLibC(); // c_allocator
-        // exe.strip, It's gone(?)
-    }
+    exe.linkLibC();
 
     b.installArtifact(exe);
 
