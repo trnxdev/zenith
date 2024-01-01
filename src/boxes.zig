@@ -66,7 +66,7 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
     }
 
     var actions = globals.Actions.init(tab.allocator);
-    defer actions.deinit();
+    defer globals.Actions_deinit(&actions);
 
     o: while (true) {
         var buffered_overlay = std.io.bufferedWriter(std.io.getStdOut().writer());
@@ -147,7 +147,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
 
     o: while (true) {
         var actions = globals.Actions.init(tab.allocator);
-        defer actions.deinit();
+        defer globals.Actions_deinit(&actions);
 
         j: while (true) {
             var buffered_overlay = std.io.bufferedWriter(std.io.getStdOut().writer());

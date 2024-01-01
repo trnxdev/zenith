@@ -90,7 +90,7 @@ pub fn open_from_file(allocator: std.mem.Allocator, index: usize, path: []u8) !*
 
 pub fn deinit(self: *@This()) void {
     self.allocator.destroy(self.cursor);
-    self.actions.deinit();
+    globals.Actions_deinit(&self.actions);
 
     for (self.lines.items) |*line| {
         line.deinit(self.allocator);
@@ -160,7 +160,7 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
     const line_end: usize = @min(self.lines_len(), line_start + usable_rows);
 
     const corrected_y = self.cursor.y + 2 - line_start;
-    var corrected_x = self.cursor.x + 4;
+    var corrected_x = self.cursor.x + 1;
 
     var start_line_txt: usize = 0;
 
@@ -171,15 +171,22 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
 
     for (self.lines.items[line_start..line_end], line_start + 1..) |line, i| {
         const private_usable_cols = usable_cols - globals.num_strlen(i);
+        const reserved_num_space = globals.num_strlen(self.lines_len()) + 3;
+        const this_digit_len = globals.num_strlen(i);
 
         if (i - 1 == self.cursor.y) {
-            corrected_x += globals.num_strlen(i);
+            corrected_x += reserved_num_space;
             try stdout.writeAll(Style.Value(.DarkGreenL));
         } else {
             try stdout.writeAll(Style.Value(.Gray));
         }
 
-        try stdout.print("{d} | ", .{i});
+        if (this_digit_len < reserved_num_space - 3) {
+            try stdout.writeByteNTimes(' ', reserved_num_space - 3 - this_digit_len);
+        }
+
+        try stdout.print("{d}", .{i});
+        try stdout.writeAll(" | ");
         try stdout.writeAll(Style.Value(.Reset));
 
         if (start_line_txt > line.items.len) {
@@ -366,6 +373,28 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
 
     if (input.isHotBind(.Ctrl, 'p')) { // Open a terminal
         self.terminal_prompt = try Boxes.terminal(self, tabs);
+        return .none;
+    }
+
+    if (input.isHotBind(.Alt, 'j')) { // Jump to a line
+        const line = try globals.text_prompt(self.allocator, "Line: ") orelse return .none;
+        defer self.allocator.free(line);
+
+        const line_utf8 = try unicode.toUtf8Alloc(self.allocator, line);
+        defer self.allocator.free(line_utf8);
+
+        var num = std.fmt.parseInt(usize, line_utf8, 10) catch |e| {
+            switch (e) {
+                std.fmt.ParseIntError.Overflow => @panic("Integer overflow while parsing a number"),
+                std.fmt.ParseIntError.InvalidCharacter => return .none,
+            }
+        };
+
+        if (num > self.lines_len())
+            num = self.lines_len();
+
+        self.cursor.y = globals.sub_1_ignore_overflow(num);
+        self.cursor.x = self.current_line().items.len;
         return .none;
     }
 

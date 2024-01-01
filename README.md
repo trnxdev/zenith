@@ -14,6 +14,7 @@
 - Ctrl + P, terminal
 - Ctrl + W, close the tab
 - Ctrl + Z, to undo last change
+- Alt  + J, jump to a line
 - Esc, To [exit](https://stackoverflow.com/questions/11828270) the editor, terminal or file opener
 
 ## To-Do:

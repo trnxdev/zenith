@@ -15,7 +15,10 @@ pub fn main() !void {
     while (true) {
         var buf: [8]u8 = undefined;
         const read = try std.io.getStdIn().reader().read(&buf);
-        try std.fs.cwd().writeFile("key.txt", buf[0..read]);
+        const joined = try std.fmt.allocPrint(std.heap.page_allocator, "{s} ({d})", .{ buf[0..read], buf });
+        defer std.heap.page_allocator.free(joined);
+
+        try std.fs.cwd().writeFile("key.txt", joined);
 
         if (buf[0] == std.ascii.control_code.esc) {
             return;

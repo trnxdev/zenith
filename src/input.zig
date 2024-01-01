@@ -4,10 +4,12 @@ const globals = @import("globals.zig");
 modifiers: Modifiers = .{},
 key: Key,
 
-const HotBind_0 = union(enum) { Ctrl };
+// TODO: make this better
+const HotBind_0 = union(enum) { Ctrl, Alt };
 pub fn isHotBind(self: @This(), hotbind_0: HotBind_0, char: globals.Char) bool {
     return switch (hotbind_0) {
         .Ctrl => self.modifiers.ctrl and self.key == .char and self.key.char == char,
+        .Alt => self.modifiers.alt and self.key == .char and self.key.char == char,
     };
 }
 
@@ -36,6 +38,7 @@ pub fn parse_stdin() !@This() {
 const Inputs = std.ComptimeStringMap(@This(), .{
     .{ str(std.ascii.control_code.etx), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'c' } } },
     .{ str(std.ascii.control_code.esc), .{ .key = .escape } },
+    .{ str_fill(std.ascii.control_code.esc, &.{'j'}), .{ .modifiers = .{ .alt = true }, .key = .{ .char = 'j' } } },
     .{ str(std.ascii.control_code.vt), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'k' } } },
     .{ str(std.ascii.control_code.ff), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'l' } } },
     .{ str(std.ascii.control_code.so), .{ .modifiers = .{ .ctrl = true }, .key = .{ .char = 'n' } } },
@@ -63,4 +66,16 @@ const Inputs = std.ComptimeStringMap(@This(), .{
 
 inline fn str(comptime control: comptime_int) []const u8 {
     comptime return &[_]u8{control};
+}
+
+inline fn str_fill(comptime control: comptime_int, comptime fill: []const u8) []const u8 {
+    var filled = [_]u8{0} ** (fill.len + 1);
+
+    filled[0] = control;
+
+    inline for (fill, 1..) |f, i| {
+        filled[i] = f;
+    }
+
+    return &filled;
 }
