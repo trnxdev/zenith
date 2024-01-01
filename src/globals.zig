@@ -185,17 +185,17 @@ pub fn modify_line(
 pub const stdin_fd = std.io.getStdIn().handle;
 pub const os = builtin.os.tag;
 
-const GetTerminalSizeError = error{IoctlFailed};
+const GetTerminalSizeError = error{RequestFailed};
 const TerminalSize = packed struct {
     rows: usize,
     cols: usize,
 };
 pub fn getTerminalSize() GetTerminalSizeError!TerminalSize {
-    var size: std.os.linux.winsize = undefined;
-    const res = std.os.linux.ioctl(stdin_fd, std.os.linux.T.IOCGWINSZ, @intFromPtr(&size));
+    var size: std.c.winsize = undefined;
+    const res = std.c.ioctl(stdin_fd, std.c.T.IOCGWINSZ, @intFromPtr(&size));
 
     if (res != 0) {
-        return GetTerminalSizeError.IoctlFailed;
+        return GetTerminalSizeError.RequestFailed;
     }
 
     return .{

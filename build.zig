@@ -10,9 +10,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    exe.linkLibC();
 
     if (optimize != .Debug) {
-        exe.linkLibC(); // c_allocator
         exe.strip = true;
     }
 
