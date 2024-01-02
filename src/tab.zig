@@ -299,7 +299,7 @@ pub fn save(self: *@This()) !globals.modify_response {
         defer self.allocator.free(file_path_maybe_absolute);
 
         self.filepath = try unicode.toUtf8Alloc(self.allocator, file_path_maybe_absolute);
-        errdefer self.allocator.free(self.filepath.?);
+        errdefer if (self.filepath) |f| self.allocator.free(f);
 
         if (!std.fs.path.isAbsolute(self.filepath.?)) {
             const cwd = try std.process.getCwdAlloc(self.allocator);
@@ -308,7 +308,8 @@ pub fn save(self: *@This()) !globals.modify_response {
             const old = self.filepath orelse unreachable;
             defer self.allocator.free(old);
 
-            self.filepath = try std.fs.path.join(self.allocator, &.{ cwd, self.filepath.? });
+            self.filepath = null;
+            self.filepath = try std.fs.path.join(self.allocator, &.{ cwd, old });
         }
 
         const last_slash = std.mem.lastIndexOfScalar(u8, self.filepath.?, std.fs.path.sep) orelse unreachable;
@@ -428,6 +429,22 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
 
     switch (input.key) {
         .arrow => |a| {
+            if (input.modifiers.alt and (a == .Up or a == .Down)) {
+                if (!self.can_move(a))
+                    return .none;
+
+                const replacer = &(switch (a) {
+                    .Up => self.lines.items[self.cursor.y - 1],
+                    .Down => self.lines.items[self.cursor.y + 1],
+                    else => unreachable,
+                });
+
+                const tmp = replacer.items;
+
+                replacer.items = self.current_line().items;
+                self.current_line().items = tmp;
+            }
+
             switch (a) {
                 .Up, .Down => {
                     const previous = self.current_line();

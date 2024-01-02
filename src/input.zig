@@ -62,6 +62,11 @@ const Inputs = std.ComptimeStringMap(@This(), .{
     .{ "\x1b[1;5B", .{ .modifiers = .{ .ctrl = true }, .key = .{ .arrow = .Down } } },
     .{ "\x1b[1;5C", .{ .modifiers = .{ .ctrl = true }, .key = .{ .arrow = .Right } } },
     .{ "\x1b[1;5D", .{ .modifiers = .{ .ctrl = true }, .key = .{ .arrow = .Left } } },
+    // Alt-Arrows
+    .{ "\x1b[1;3A", .{ .modifiers = .{ .alt = true }, .key = .{ .arrow = .Up } } },
+    .{ "\x1b[1;3B", .{ .modifiers = .{ .alt = true }, .key = .{ .arrow = .Down } } },
+    .{ "\x1b[1;3C", .{ .modifiers = .{ .alt = true }, .key = .{ .arrow = .Right } } },
+    .{ "\x1b[1;3D", .{ .modifiers = .{ .alt = true }, .key = .{ .arrow = .Left } } },
     //  .{ &[_]u8{ std.ascii.control_code.esc, '[', 'A' }, .{ .key = .{ .arrow = .Up } } },
 });
 

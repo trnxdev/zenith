@@ -6,6 +6,8 @@
 ## Controls:
 - Arrows to navigate arround
     - with support of Ctrl-(Arrow)
+- Alt  + (Arrow Up/Down) to move a Line
+- Alt  + J, jump to a line
 - Ctrl + O, open a file from cwd
 - Ctrl + N, new empty tab
 - Ctrl + S, save a file
@@ -15,7 +17,6 @@
 - Ctrl + W, close the tab
 - Ctrl + Z, undo last change
 - Ctrl + D, duplicate Line
-- Alt  + J, jump to a line
 - Esc, To [exit](https://stackoverflow.com/questions/11828270) the editor, terminal or file opener
 
 ## To-Do:
@@ -26,7 +27,6 @@
 - [ ] Maybe better Input parsing?
 - [ ] Ctrl + Y to Undo/Redo
 - [ ] Text Selection (w/ Ctrl + A)
-- [ ] Alt + (Arrow) to move arround a Line
 - [ ] Formatting
 - [ ] Handle long Box queries
 - [ ] Make the code more readable
