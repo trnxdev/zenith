@@ -121,7 +121,7 @@ pub fn modify_line(
 
             saved.* = false;
 
-            if (input.modifiers.ctrl) {
+            if (input.modifiers.isCtrl()) {
                 const old = cursor.x;
                 cursor.ctrl_move(line, .Left);
                 const now = cursor.x;
@@ -171,7 +171,7 @@ pub fn modify_line(
             if (a == .Up or a == .Down)
                 return .none;
 
-            if (input.modifiers.ctrl) {
+            if (input.modifiers.isCtrl()) {
                 cursor.ctrl_move(line, a);
             } else {
                 cursor.move(1, line.items.len, a);
@@ -267,7 +267,7 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
         try std.io.getStdOut().writer().print("\x1b[{};{}H", .{ cursor.y, cursor.x + text.len + 1 });
 
         // Input
-        const input = try Input.parse_stdin();
+        const input = try Input.parseStdin();
 
         if (input.key == .enter) {
             break :o;

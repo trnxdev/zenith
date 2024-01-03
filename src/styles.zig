@@ -25,7 +25,7 @@ pub inline fn Value(style_enum: Enum) []const u8 {
         .Purple => "\x1b[95m",
         .Gray => "\x1b[90m",
         .GrayBG => "\x1b[48;5;240m",
-        .WhiteBG => "\x1b[48;5;15m",
+        .WhiteBG => "\x1b[30;47m",
         .Black => "\x1b[30m",
         // VScode inspired
         .Green => "\x1B[38;2;181;206;168m",

@@ -48,7 +48,7 @@ pub fn main() !void {
     o: while (true) {
         try tab.draw(tabs, std.io.getStdOut().writer());
 
-        const input = try Input.parse_stdin();
+        const input = try Input.parseStdin();
 
         switch (try tab.modify(&tabs, input)) {
             .none => continue :o,

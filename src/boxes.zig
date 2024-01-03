@@ -90,11 +90,14 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         } else filtered_paths;
         defer if (filter) searched_paths.deinit(tab.allocator);
 
+        if (box.input_cursor.y > searched_paths.items.len)
+            box.input_cursor.y = globals.sub_1_ignore_overflow(searched_paths.items.len);
+
         try tab.draw(tabs.*, overlay); // Draw the background
         try box.draw(searched_paths.items, overlay);
         try buffered_overlay.flush();
 
-        const input = try Input.parse_stdin();
+        const input = try Input.parseStdin();
 
         switch (try box.modify(input, searched_paths.items.len, &actions)) {
             .focus => {
@@ -163,7 +166,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
             try box.draw(splitted.items, overlay);
             try buffered_overlay.flush();
 
-            const input = try Input.parse_stdin();
+            const input = try Input.parseStdin();
             switch (try box.modify(input, buffer.items.len, &actions)) {
                 .none => {},
                 .exit => break :o,
