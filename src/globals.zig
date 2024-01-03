@@ -267,7 +267,7 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
         try std.io.getStdOut().writer().print("\x1b[{};{}H", .{ cursor.y, cursor.x + text.len + 1 });
 
         // Input
-        const input = try Input.parse_stdin();
+        const input = try Input.parseStdin();
 
         if (input.key == .enter) {
             break :o;

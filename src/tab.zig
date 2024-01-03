@@ -18,6 +18,7 @@ saved: bool,
 allocator: std.mem.Allocator,
 actions: globals.Actions,
 terminal_prompt: ?[]globals.Char,
+overwrite_bottom: ?[]u8,
 
 pub fn init(allocator: std.mem.Allocator, index: usize) !*@This() {
     const tab = try allocator.create(@This());
@@ -43,6 +44,7 @@ pub fn init(allocator: std.mem.Allocator, index: usize) !*@This() {
         .lines = lines,
         .index = index,
         .terminal_prompt = null,
+        .overwrite_bottom = null,
         .actions = globals.Actions.init(allocator),
     };
 
@@ -96,6 +98,10 @@ pub fn deinit(self: *@This()) void {
         line.deinit(self.allocator);
     }
     self.lines.deinit();
+
+    if (self.overwrite_bottom) |overwrite_bottom| {
+        self.allocator.free(overwrite_bottom);
+    }
 
     if (self.filename) |filename| {
         std.debug.assert(self.filepath != null);
@@ -242,42 +248,47 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
     }
 
     // Bottom Bar
-
-    const readable_path = try self.readable_filepath();
-    defer self.allocator.free(readable_path);
-
-    const left = try std.fmt.allocPrint(
-        self.allocator,
-        "{s} - {s}",
-        .{ readable_path, self.readable_saved() },
-    );
-    defer self.allocator.free(left);
-
-    const right = try std.fmt.allocPrint(
-        self.allocator,
-        "Line {d}, Chars: {d}",
-        .{ self.cursor.y + 1, self.current_line().items.len },
-    );
-    defer self.allocator.free(right);
-
     try stdout.writeAll(Style.Value(.WhiteBG));
 
-    if (left.len < size.cols) {
-        try stdout.writeAll(left);
-
-        const free_space: i64 = @intCast(size.cols - left.len);
-        const spaces: i64 = @intCast(free_space - globals.i64_from(right.len));
-
-        if (spaces >= 0) {
-            try stdout.writeByteNTimes(' ', globals.usize_from(spaces));
-            try stdout.writeAll(right);
-        } else {
-            try stdout.writeByteNTimes(' ', globals.usize_from(free_space));
+    if (self.overwrite_bottom) |ob| {
+        if (ob.len < size.cols) {
+            try stdout.writeAll(ob);
+            try stdout.writeByteNTimes(' ', size.cols - ob.len);
         }
     } else {
-        try stdout.writeByteNTimes(' ', globals.usize_from(size.cols));
-    }
+        const readable_path = try self.readable_filepath();
+        defer self.allocator.free(readable_path);
 
+        const left = try std.fmt.allocPrint(
+            self.allocator,
+            "{s} - {s}",
+            .{ readable_path, self.readable_saved() },
+        );
+        defer self.allocator.free(left);
+
+        const right = try std.fmt.allocPrint(
+            self.allocator,
+            "Line {d}, Chars: {d}",
+            .{ self.cursor.y + 1, self.current_line().items.len },
+        );
+        defer self.allocator.free(right);
+
+        if (left.len < size.cols) {
+            try stdout.writeAll(left);
+
+            const free_space: i64 = @intCast(size.cols - left.len);
+            const spaces: i64 = @intCast(free_space - globals.i64_from(right.len));
+
+            if (spaces >= 0) {
+                try stdout.writeByteNTimes(' ', globals.usize_from(spaces));
+                try stdout.writeAll(right);
+            } else {
+                try stdout.writeByteNTimes(' ', globals.usize_from(free_space));
+            }
+        } else {
+            try stdout.writeByteNTimes(' ', globals.usize_from(size.cols));
+        }
+    }
     try stdout.writeAll(Style.Value(.Reset));
     try stdout.print("\x1b[{};{}H", .{ corrected_y, corrected_x });
 }
@@ -333,6 +344,66 @@ pub fn save(self: *@This()) !globals.modify_response {
     }
 
     self.saved = true;
+    return .none;
+}
+
+pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
+    const find_input = (try globals.text_prompt(self.allocator, "What do you want to find: ")) orelse return .none;
+    defer self.allocator.free(find_input);
+
+    const utf8_input = try unicode.toUtf8Alloc(self.allocator, find_input);
+    defer self.allocator.free(utf8_input);
+
+    self.overwrite_bottom = try std.fmt.allocPrint(self.allocator, "Searching for: {s}", .{utf8_input});
+    defer if (self.overwrite_bottom) |ob| {
+        self.overwrite_bottom = null;
+        self.allocator.free(ob);
+    };
+
+    var found: bool = false;
+
+    outer: while (true) {
+        wouter: for (self.lines.items, 0..) |line, y| {
+            self.cursor.y = y;
+            self.cursor.x = 0;
+
+            search: while (std.mem.indexOfPos(u21, line.items, self.cursor.x, find_input)) |x_loc| {
+                self.cursor.x = x_loc;
+
+                found = true;
+
+                try self.draw(tabs.*, std.io.getStdOut().writer());
+
+                const input = try Input.parseStdin();
+
+                if (input.key == .enter) {
+                    if (!self.can_move(.Right)) {
+                        break :wouter;
+                    } else {
+                        self.cursor.x += 1;
+                        continue :search;
+                    }
+                } else if (input.key == .escape)
+                    break :wouter
+                else {
+                    return try self.modify(tabs, input);
+                }
+            }
+        }
+
+        if (!found) {
+            const old = self.overwrite_bottom orelse unreachable;
+            defer self.allocator.free(old);
+            self.overwrite_bottom = try std.fmt.allocPrint(self.allocator, "Nothing has been found for: {s}", .{utf8_input});
+
+            try self.draw(tabs.*, std.io.getStdOut().writer());
+            _ = try Input.parseStdin();
+            break :outer;
+        } else {
+            continue :outer;
+        }
+    }
+
     return .none;
 }
 
@@ -425,6 +496,10 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
         return .{
             .focus = globals.sub_1_ignore_overflow(self.index),
         };
+    }
+
+    if (input.isHotBind(.Ctrl, 'f')) {
+        return try self.find(tabs);
     }
 
     switch (input.key) {

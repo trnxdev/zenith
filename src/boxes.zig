@@ -94,7 +94,7 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         try box.draw(searched_paths.items, overlay);
         try buffered_overlay.flush();
 
-        const input = try Input.parse_stdin();
+        const input = try Input.parseStdin();
 
         switch (try box.modify(input, searched_paths.items.len, &actions)) {
             .focus => {
@@ -163,7 +163,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
             try box.draw(splitted.items, overlay);
             try buffered_overlay.flush();
 
-            const input = try Input.parse_stdin();
+            const input = try Input.parseStdin();
             switch (try box.modify(input, buffer.items.len, &actions)) {
                 .none => {},
                 .exit => break :o,
