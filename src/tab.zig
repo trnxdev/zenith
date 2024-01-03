@@ -361,9 +361,12 @@ pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
     };
 
     var found: bool = false;
+    var first_run: bool = true;
 
     outer: while (true) {
-        wouter: for (self.lines.items, 0..) |line, y| {
+        const start_idx = if (first_run) self.cursor.y else 0;
+
+        wouter: for (self.lines.items[start_idx..], start_idx..) |line, y| {
             self.cursor.y = y;
             self.cursor.x = 0;
 
@@ -384,7 +387,7 @@ pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
                         continue :search;
                     }
                 } else if (input.key == .escape)
-                    break :wouter
+                    break :outer
                 else {
                     return try self.modify(tabs, input);
                 }
@@ -400,6 +403,7 @@ pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
             _ = try Input.parseStdin();
             break :outer;
         } else {
+            first_run = false;
             continue :outer;
         }
     }
@@ -504,7 +508,7 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
 
     switch (input.key) {
         .arrow => |a| {
-            if (input.modifiers.alt and (a == .Up or a == .Down)) {
+            if (input.modifiers.isAlt() and (a == .Up or a == .Down)) {
                 if (!self.can_move(a))
                     return .none;
 

@@ -2,6 +2,7 @@ const std = @import("std");
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
+
     var new_lines = std.ArrayList(u8).init(allocator);
     defer new_lines.deinit();
 

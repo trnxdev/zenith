@@ -121,7 +121,7 @@ pub fn modify_line(
 
             saved.* = false;
 
-            if (input.modifiers.ctrl) {
+            if (input.modifiers.isCtrl()) {
                 const old = cursor.x;
                 cursor.ctrl_move(line, .Left);
                 const now = cursor.x;
@@ -171,7 +171,7 @@ pub fn modify_line(
             if (a == .Up or a == .Down)
                 return .none;
 
-            if (input.modifiers.ctrl) {
+            if (input.modifiers.isCtrl()) {
                 cursor.ctrl_move(line, a);
             } else {
                 cursor.move(1, line.items.len, a);

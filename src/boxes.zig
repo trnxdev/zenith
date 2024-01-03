@@ -90,6 +90,9 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         } else filtered_paths;
         defer if (filter) searched_paths.deinit(tab.allocator);
 
+        if (box.input_cursor.y > searched_paths.items.len)
+            box.input_cursor.y = globals.sub_1_ignore_overflow(searched_paths.items.len);
+
         try tab.draw(tabs.*, overlay); // Draw the background
         try box.draw(searched_paths.items, overlay);
         try buffered_overlay.flush();
