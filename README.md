@@ -26,6 +26,8 @@
     - Press Escape to exit the Finder
     - Press Enter to continue searching
     - Any other character will exit the Finder and use the character on the Tab
+- **Terminal:**
+  - Ctrl + P to open it
 - **Exit:**
   - Press Esc to exit the editor, the terminal (Ctrl + P), File Explorer (Ctrl + O) or the file-wide searcher
 
