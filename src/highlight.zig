@@ -42,7 +42,10 @@ pub const Keywords = std.ComptimeStringMap(Style.Enum, .{
     .{ "else", .Purple },
     .{ "for", .Purple },
     .{ "while", .Purple },
+    .{ "do", .Purple },
     .{ "loop", .Purple },
+    .{ "end", .Purple },
+    .{ "done", .Purple },
     .{ "break", .Purple },
     .{ "continue", .Purple },
     .{ "switch", .Purple },
@@ -219,5 +222,5 @@ pub fn pre_char_dot_call(file: []const globals.Char, i: usize) bool {
 }
 
 pub fn isIdent(c: globals.Char) bool {
-    return unicode.isAlphanumeric(c) or c == '_';
+    return unicode.isAlphanumeric(c) or c == '_' or c == '$' or c == '@';
 }
