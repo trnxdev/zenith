@@ -358,12 +358,15 @@ pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
     defer if (self.overwrite_bottom) |ob| {
         self.overwrite_bottom = null;
         self.allocator.free(ob);
-    };
+    } else unreachable;
 
     var found: bool = false;
     var first_run: bool = true;
+    const began_from_null: bool = self.cursor.y == 0;
 
     outer: while (true) {
+        defer first_run = false;
+
         const start_idx = if (first_run) self.cursor.y else 0;
 
         wouter: for (self.lines.items[start_idx..], start_idx..) |line, y| {
@@ -389,21 +392,31 @@ pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
                 } else if (input.key == .escape)
                     break :outer
                 else {
+                    if (input.isHotBind(.Ctrl, 'f')) {
+                        break :outer; // hmm.. i don't think it's good
+                    }
+
                     return try self.modify(tabs, input);
                 }
             }
         }
 
         if (!found) {
+            if (!began_from_null and first_run) {
+                self.cursor.y = 0;
+                continue :outer;
+            }
+
             const old = self.overwrite_bottom orelse unreachable;
             defer self.allocator.free(old);
+
+            self.overwrite_bottom = null;
             self.overwrite_bottom = try std.fmt.allocPrint(self.allocator, "Nothing has been found for: {s}", .{utf8_input});
 
             try self.draw(tabs.*, std.io.getStdOut().writer());
             _ = try Input.parseStdin();
             break :outer;
         } else {
-            first_run = false;
             continue :outer;
         }
     }
