@@ -7,7 +7,7 @@ const Style = @import("styles.zig");
 const Input = @import("input.zig");
 
 pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
-    var box = try Box.init(tab.allocator, true);
+    var box = Box.init(tab.allocator, true);
     defer box.deinit();
 
     var ignoreMap = std.ArrayList([]u8).init(tab.allocator);
@@ -136,7 +136,7 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
 }
 
 pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
-    var box = try Box.init(tab.allocator, false);
+    var box = Box.init(tab.allocator, false);
     defer box.deinit();
 
     var buffer = std.ArrayList(u8).init(tab.allocator);
