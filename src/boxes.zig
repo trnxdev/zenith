@@ -120,7 +120,7 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
                     }
                 }
 
-                const new_tab = try Tab.open_from_file(tab.allocator, tabs.items.len, focused_absolute);
+                const new_tab = try Tab.open_from_file(tab.allocator, tabs.items.len, focused_absolute, tab.editor);
                 errdefer new_tab.deinit();
 
                 try tabs.append(new_tab);
