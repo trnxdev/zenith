@@ -8,31 +8,15 @@ const Tab = @import("tab.zig");
 
 allocator: std.mem.Allocator,
 highlight_selected: bool = false,
-input: *globals.Line,
-input_cursor: *Cursor,
+input: globals.Line = .{},
+input_cursor: Cursor = .{ .x = 0, .y = 0 },
 
 pub inline fn init(allocator: std.mem.Allocator, highlight_selected: bool) !@This() {
-    const l = try allocator.create(globals.Line);
-    errdefer allocator.destroy(l); // is it even necessary?
-    l.* = globals.Line{};
-    errdefer l.deinit(allocator); // beh
-
-    const i = try allocator.create(Cursor);
-    errdefer allocator.destroy(i); // bah
-    i.* = std.mem.zeroes(Cursor);
-
-    return .{
-        .allocator = allocator,
-        .highlight_selected = highlight_selected,
-        .input = l,
-        .input_cursor = i,
-    };
+    return .{ .allocator = allocator, .highlight_selected = highlight_selected };
 }
 
 pub fn deinit(self: *@This()) void {
     self.input.deinit(self.allocator);
-    self.allocator.destroy(self.input);
-    self.allocator.destroy(self.input_cursor);
     _ = std.io.getStdOut().write(Style.Value(.ShowCursor)) catch @panic("Box could not reset the cursor!");
 }
 
@@ -50,8 +34,8 @@ pub fn modify(self: *@This(), input: Input, options: usize, actions: *globals.Ac
             },
             else => try globals.modify_line(
                 self.allocator,
-                self.input,
-                self.input_cursor,
+                &self.input,
+                &self.input_cursor,
                 &empty_bool,
                 actions,
                 input,
@@ -60,8 +44,8 @@ pub fn modify(self: *@This(), input: Input, options: usize, actions: *globals.Ac
         },
         else => try globals.modify_line(
             self.allocator,
-            self.input,
-            self.input_cursor,
+            &self.input,
+            &self.input_cursor,
             &empty_bool,
             actions,
             input,

@@ -144,7 +144,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
 
     if (tab.terminal_prompt) |terminal_prompt| {
         try box.input.appendSlice(tab.allocator, terminal_prompt);
-        box.input_cursor.*.x = box.input.items.len;
+        box.input_cursor.x = box.input.items.len;
         tab.allocator.free(terminal_prompt);
     }
 
