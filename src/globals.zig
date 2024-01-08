@@ -6,6 +6,7 @@ const Input = @import("input.zig");
 const Style = @import("styles.zig");
 const unicode = @import("unicode.zig");
 const Action = @import("action.zig").Action;
+const Config = @import("conf.zig");
 
 pub const no_filename = "Unnamed";
 pub const no_filepath = "No File Path";
@@ -28,6 +29,7 @@ pub const modify_response = union(enum) {
 };
 pub const Tabs = std.ArrayList(*Tab);
 pub const Actions = std.ArrayList(Action);
+pub const Editor = struct { tabs: *Tabs, config: Config.Value };
 
 pub fn undo(allocator: std.mem.Allocator, line: *Line, cursor: *Cursor, saved: *bool, actions: *Actions, external: anytype) !modify_response {
     if (actions.items.len == 0) {

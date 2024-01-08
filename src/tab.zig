@@ -19,8 +19,9 @@ allocator: std.mem.Allocator,
 actions: globals.Actions,
 terminal_prompt: ?[]globals.Char,
 overwrite_bottom: ?[]u8,
+editor: *globals.Editor,
 
-pub fn init(allocator: std.mem.Allocator, index: usize) !*@This() {
+pub fn create(allocator: std.mem.Allocator, index: usize, editor: *globals.Editor) !*@This() {
     const tab = try allocator.create(@This());
     errdefer tab.deinit();
 
@@ -46,13 +47,14 @@ pub fn init(allocator: std.mem.Allocator, index: usize) !*@This() {
         .terminal_prompt = null,
         .overwrite_bottom = null,
         .actions = globals.Actions.init(allocator),
+        .editor = editor,
     };
 
     return tab;
 }
 
-pub fn open_from_file(allocator: std.mem.Allocator, index: usize, path: []u8) !*@This() {
-    const tab = try Tab.init(allocator, index);
+pub fn open_from_file(allocator: std.mem.Allocator, index: usize, path: []u8, editor: *globals.Editor) !*@This() {
+    const tab = try Tab.create(allocator, index, editor);
     errdefer tab.deinit();
 
     const file: std.fs.File = try if (std.fs.path.isAbsolute(path)) std.fs.createFileAbsolute(
@@ -169,11 +171,7 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
     var corrected_x = self.cursor.x + 1;
 
     var start_line_txt: usize = 0;
-
-    while (corrected_x > @divFloor(usable_cols, 2)) {
-        start_line_txt += 1;
-        corrected_x -= 1;
-    }
+    callculate_scrolling(&start_line_txt, &corrected_x, usable_cols);
 
     for (self.lines.items[line_start..line_end], line_start + 1..) |line, i| {
         const private_usable_cols = usable_cols - globals.num_strlen(i);
@@ -195,21 +193,29 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
         try stdout.writeAll(" | ");
         try stdout.writeAll(Style.Value(.Reset));
 
-        if (start_line_txt > line.items.len) {
-            // try stdout.writeAll(Style.Value(.WhiteBG));
-            // try stdout.writeByte('<');
-            // try stdout.writeAll(Style.Value(.Reset));
-        } else {
-            var first_ignore: bool = false;
+        var first_ignore: bool = false;
 
-            if (start_line_txt > 0) {
-                try stdout.writeAll(Style.Value(.WhiteBG));
-                try stdout.writeByte('<');
-                try stdout.writeAll(Style.Value(.Reset));
-                first_ignore = true;
+        const this_scroll = v: {
+            if (self.editor.config.scrolling == .Line) {
+                if (i - 1 == self.cursor.y) {
+                    break :v start_line_txt;
+                }
+
+                break :v 0;
             }
 
-            const highlighted = try highlight.scan(self.allocator, line.items[start_line_txt..]);
+            break :v start_line_txt;
+        };
+
+        if (this_scroll > 0) {
+            try stdout.writeAll(Style.Value(.WhiteBG));
+            try stdout.writeByte('<');
+            try stdout.writeAll(Style.Value(.Reset));
+            first_ignore = true;
+        }
+
+        if (this_scroll < line.items.len) {
+            const highlighted = try highlight.scan(self.allocator, line.items[this_scroll..]);
             defer self.allocator.free(highlighted);
 
             var z: usize = 0;
@@ -239,6 +245,7 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
                 }
             }
         }
+
         lines += 1;
         try stdout.writeByte('\n');
     }
@@ -268,8 +275,8 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
 
         const right = try std.fmt.allocPrint(
             self.allocator,
-            "Line {d}, Chars: {d}",
-            .{ self.cursor.y + 1, self.current_line().items.len },
+            "Line: {d}, Char: {d}",
+            .{ self.cursor.y + 1, self.cursor.x },
         );
         defer self.allocator.free(right);
 
@@ -424,6 +431,13 @@ pub fn find(self: *@This(), tabs: *globals.Tabs) !globals.modify_response {
     return .none;
 }
 
+fn callculate_scrolling(start_line: *usize, cor_x: *usize, cols: usize) void {
+    while (cor_x.* > @divFloor(cols, 2)) {
+        start_line.* += 1;
+        cor_x.* -= 1;
+    }
+}
+
 pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!globals.modify_response {
     if (input.isHotBind(.Ctrl, 'd')) { // Duplicate Line
         var new_line = globals.Line{};
@@ -453,7 +467,7 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
     }
 
     if (input.isHotBind(.Ctrl, 'n')) { // Create a new tab
-        const empty = try Tab.init(self.allocator, tabs.items.len);
+        const empty = try Tab.create(self.allocator, tabs.items.len, self.editor);
         errdefer empty.deinit();
 
         try empty.lines.append(globals.Line{});
@@ -483,8 +497,8 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
 
         var num = std.fmt.parseInt(usize, line_utf8, 10) catch |e| {
             switch (e) {
-                std.fmt.ParseIntError.Overflow => @panic("Integer overflow while parsing a number"),
                 std.fmt.ParseIntError.InvalidCharacter => return .none,
+                else => return e,
             }
         };
 

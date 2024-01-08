@@ -31,8 +31,25 @@
 - **Exit:**
   - Press Esc to exit the editor, the terminal (Ctrl + P), File Explorer (Ctrl + O) or the file-wide searcher
 
+## Config
+By default it is stored in $USER/.zenith.json, you can override this by setting the $ZENITH_CONFIG_PATH
+Environment Variable.
+
+The config file is in json format, here are the options:
+```json
+{
+    // Defines the horizontal line scroll behaviour,
+    // "Line" [Default] will only scroll the line (kind of like nano does)
+    // "Tab" will scroll all the visible lines 
+    scrolling: "Line" | "Tab" = "Line"
+};
+```
+
 ## To-Do:
-- [ ] colors to the terminal (Ctrl + P)
+- [ ] Add more config options
+  - [ ] When to scroll the line option in Config
+      - Middle, MiddleEnd, End (?)
+- [ ] Colors to the terminal (Ctrl + P)
 - [ ] .gitignore support for Ctrl + O
 - [ ] Implement Ctrl + Y for Redo
 - [ ] Text selection

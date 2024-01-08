@@ -6,6 +6,7 @@ const unicode = @import("unicode.zig");
 const globals = @import("globals.zig");
 const Tab = @import("tab.zig");
 const Input = @import("input.zig");
+const Config = @import("conf.zig");
 
 comptime {
     if (globals.os != .linux) {
@@ -33,14 +34,32 @@ pub fn main() !void {
     defer tabs.deinit();
     defer for (tabs.items) |stab| stab.deinit();
 
+    const config: ?Config.parse_default_result = Config.parseDefault(allocator) catch |e| brk: {
+        switch (e) {
+            error.CustomConfigFileCouldNotBeOpened => {
+                try std.io.getStdOut().writeAll(Style.Value(.ClearScreen));
+                try std.io.getStdOut().writeAll("The config was not found\npress enter to continue.");
+                _ = try std.io.getStdIn().reader().readByte();
+                break :brk null;
+            },
+            else => return e,
+        }
+    };
+    defer if (config) |c| c.deinit();
+
+    var editor: globals.Editor = .{
+        .tabs = &tabs,
+        .config = if (config) |c| c.value else Config.Value{},
+    };
+
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
     var tab = if (args.len >= 2) v: {
         const file_path = args[1];
-        break :v try Tab.open_from_file(allocator, 0, file_path);
+        break :v try Tab.open_from_file(allocator, 0, file_path, &editor);
     } else brk: {
-        const inside_tab = try Tab.init(allocator, 0);
+        const inside_tab = try Tab.create(allocator, 0, &editor);
         try inside_tab.lines.append(globals.Line{}); // A tab requires atleast one line
         break :brk inside_tab;
     };
