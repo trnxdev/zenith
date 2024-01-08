@@ -11,8 +11,11 @@ highlight_selected: bool = false,
 input: globals.Line = .{},
 input_cursor: Cursor = .{ .x = 0, .y = 0 },
 
-pub inline fn init(allocator: std.mem.Allocator, highlight_selected: bool) !@This() {
-    return .{ .allocator = allocator, .highlight_selected = highlight_selected };
+pub inline fn init(allocator: std.mem.Allocator, highlight_selected: bool) @This() {
+    return .{
+        .allocator = allocator,
+        .highlight_selected = highlight_selected,
+    };
 }
 
 pub fn deinit(self: *@This()) void {
