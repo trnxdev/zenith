@@ -10,6 +10,15 @@ allocator: std.mem.Allocator,
 highlight_selected: bool = false,
 input: globals.Line = .{},
 input_cursor: Cursor = .{ .x = 0, .y = 0 },
+metadata: Meta = .{},
+
+const Meta = struct {
+    began: usize = 0,
+    ended: usize = 0,
+    last_action: LAction = .Key,
+
+    const LAction = enum { Key, Arrow };
+};
 
 pub inline fn init(allocator: std.mem.Allocator, highlight_selected: bool) @This() {
     return .{
@@ -26,6 +35,8 @@ pub fn deinit(self: *@This()) void {
 // if this returns focus it's always 0 (focus = enter pressed)
 pub fn modify(self: *@This(), input: Input, options: usize, actions: *globals.Actions) !globals.modify_response {
     var empty_bool: bool = false;
+
+    self.metadata.last_action = if (input.key == .arrow) .Arrow else .Key;
 
     return switch (input.key) {
         .escape => .exit,
@@ -57,7 +68,7 @@ pub fn modify(self: *@This(), input: Input, options: usize, actions: *globals.Ac
     };
 }
 
-pub fn draw(self: *@This(), options: [][]globals.Char, writer: anytype) !void {
+pub fn draw(self: *@This(), options: []const []const u8, writer: anytype) !void {
     var buffered = std.io.bufferedWriter(writer);
     defer buffered.flush() catch {};
 
@@ -104,6 +115,8 @@ pub fn draw(self: *@This(), options: [][]globals.Char, writer: anytype) !void {
         const line_end = @min(options.len, line_start + usable_options_rows);
 
         draw_cursor.x = 0;
+        self.metadata.began = line_start;
+        self.metadata.ended = line_end;
 
         for (options[line_start..line_end], line_start..) |option, i| {
             draw_cursor.x = 0;
@@ -112,10 +125,8 @@ pub fn draw(self: *@This(), options: [][]globals.Char, writer: anytype) !void {
             if (self.highlight_selected and i == self.input_cursor.y) {
                 try stdout.writeAll(Style.Value(.WhiteBG));
             }
-            const utf8_option = try unicode.toUtf8Alloc(self.allocator, option);
-            defer self.allocator.free(utf8_option);
 
-            inner: for (utf8_option) |c| {
+            inner: for (option) |c| {
                 if (draw_cursor.x > size.cols - 5) {
                     try stdout.writeAll(Style.Value(.Reset));
                     if (self.highlight_selected and i == self.input_cursor.y) {

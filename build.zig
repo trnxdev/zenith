@@ -13,7 +13,8 @@ pub fn build(b: *std.Build) void {
     exe.linkLibC();
 
     if (optimize != .Debug) {
-        exe.strip = true;
+        exe.linkLibC(); // c_allocator
+        // exe.strip, It's gone(?)
     }
 
     b.installArtifact(exe);

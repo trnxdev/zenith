@@ -67,15 +67,13 @@ pub fn open_from_file(allocator: std.mem.Allocator, index: usize, path: []u8, ed
     defer file.close();
 
     const reader = file.reader();
-    var wrote: bool = false;
 
     while (try reader.readUntilDelimiterOrEofAlloc(allocator, '\n', std.math.maxInt(usize))) |line| {
-        wrote = true;
         defer allocator.free(line);
         try tab.lines.append(try unicode.toUnicodeList(allocator, line));
     }
 
-    if (!wrote)
+    if (tab.lines.items.len == 0)
         try tab.lines.append(globals.Line{});
 
     // I wish there was std.fs.File.realpathAlloc
@@ -651,7 +649,7 @@ pub fn readable_filepath_raw(allocator: std.mem.Allocator, filepath: []u8) ![]u8
     return try std.fmt.allocPrint(allocator, "${c}{s}", .{ std.fs.path.sep, f });
 }
 
-pub fn readable_filepath_cwd(allocator: std.mem.Allocator, filepath: []u8) ![]u8 {
+pub fn readable_filepath_cwd(allocator: std.mem.Allocator, filepath: []const u8) ![]u8 {
     const cwd = try std.process.getCwdAlloc(allocator);
     defer allocator.free(cwd);
 
