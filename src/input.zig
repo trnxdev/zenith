@@ -56,6 +56,21 @@ pub const Modifiers = enum {
     }
 };
 
+// zig fmt: off
+const utf8_decode_error =
+    std.unicode.Utf8DecodeError
+||  error { CharNotFound };
+// zig fmt: on
+fn utf8Decode(bytes: []const u8) utf8_decode_error!u21 {
+    return switch (bytes.len) {
+        1 => @as(u21, bytes[0]),
+        2 => std.unicode.utf8Decode2(bytes),
+        3 => std.unicode.utf8Decode3(bytes),
+        4 => std.unicode.utf8Decode4(bytes),
+        else => return utf8_decode_error.CharNotFound,
+    };
+}
+
 pub fn parseStdin() !@This() {
     var buf: [8]u8 = undefined;
     const read = try std.io.getStdIn().reader().read(&buf);

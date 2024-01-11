@@ -54,6 +54,22 @@ pub fn toSplittedUnicode(
     return out;
 }
 
+pub fn toSplittedUtf8(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+) !std.ArrayList([]const u8) {
+    var out = std.ArrayList([]const u8).init(allocator);
+    errdefer out.deinit();
+
+    var split = std.mem.splitScalar(u8, input, '\n');
+
+    while (split.next()) |s| {
+        try out.append(s);
+    }
+
+    return out;
+}
+
 // zig fmt: off
 const to_unicode_list_error =
     std.mem.Allocator.Error // ArrayListUnmanaged.append

@@ -136,31 +136,6 @@ pub fn scan(allocator: std.mem.Allocator, file: []globals.Char) ![]CharColored {
                 try fl.append(.{ .col = .Reset });
                 continue;
             },
-            'a'...'z', 'A'...'Z', '_' => {
-                const start = i - 1;
-
-                while (unicode.isAlphanumeric(peek(file, i)) or peek(file, i) == '_') {
-                    _ = advance(file, &i);
-                }
-
-                const ident_utf8 = try unicode.toUtf8Alloc(allocator, file[start..i]);
-                defer allocator.free(ident_utf8);
-
-                if (peek(file, i) == '(') {
-                    try fl.append(.{ .col = .Yellow });
-                } else if (peek(file, i) == '.' and !pre_char_dot_call(file, i)) {
-                    try fl.append(.{ .col = .DarkGreenL });
-                } else if (Keywords.get(ident_utf8)) |cl| {
-                    try fl.append(.{ .col = cl });
-                } else {
-                    try fl.append(.{ .col = .Cyan });
-                }
-                for (file[start..i]) |_c| {
-                    try fl.append(.{ .b = _c });
-                }
-                try fl.append(.{ .col = .Reset });
-                continue;
-            },
             '"', '\'' => {
                 const cr = c;
                 const start = i - 1;
@@ -183,6 +158,32 @@ pub fn scan(allocator: std.mem.Allocator, file: []globals.Char) ![]CharColored {
                 try fl.append(.{ .col = .Reset });
             },
             else => {
+                if (isIdent(c)) {
+                    const start = i - 1;
+
+                    while (unicode.isAlphanumeric(peek(file, i)) or peek(file, i) == '_') {
+                        _ = advance(file, &i);
+                    }
+
+                    const ident_utf8 = try unicode.toUtf8Alloc(allocator, file[start..i]);
+                    defer allocator.free(ident_utf8);
+
+                    if (peek(file, i) == '(') {
+                        try fl.append(.{ .col = .Yellow });
+                    } else if (peek(file, i) == '.' and !pre_char_dot_call(file, i)) {
+                        try fl.append(.{ .col = .DarkGreenL });
+                    } else if (Keywords.get(ident_utf8)) |cl| {
+                        try fl.append(.{ .col = cl });
+                    } else {
+                        try fl.append(.{ .col = .Cyan });
+                    }
+                    for (file[start..i]) |_c| {
+                        try fl.append(.{ .b = _c });
+                    }
+                    try fl.append(.{ .col = .Reset });
+                    continue;
+                }
+
                 try fl.append(.{ .b = c });
             },
         }

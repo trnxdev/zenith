@@ -6,11 +6,11 @@ pub const Value = struct {
         Line,
         Tab,
     } = .Line,
-    begin_scroll: enum {
-        Middle,
-        MiddleEnd,
-        End,
-    } = .MiddleEnd,
+    //begin_scroll: enum {
+    //    Middle,
+    //    MiddleEnd,
+    //    End,
+    //} = .MiddleEnd,
 };
 
 pub const custom_path_env = "ZENITH_CONFIG_PATH";

@@ -34,7 +34,7 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
         }
     }
 
-    var filtered_paths = std.ArrayListUnmanaged([]globals.Char){};
+    var filtered_paths = std.ArrayListUnmanaged([]const u8){};
     defer filtered_paths.deinit(tab.allocator);
     defer for (filtered_paths.items) |e| tab.allocator.free(e);
 
@@ -45,7 +45,7 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
     var walker = try cwd.walk(tab.allocator);
     defer walker.deinit();
 
-    walker_loop: while (try walker.next()) |e| {
+    walker_loop: while (try ignore_specific_err(&walker)) |e| {
         if (e.kind == .directory)
             continue :walker_loop;
 
@@ -61,34 +61,54 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
 
         try filtered_paths.append(
             tab.allocator,
-            try unicode.toUnicodeAlloc(tab.allocator, e.path),
+            try tab.allocator.dupe(u8, e.path),
         );
     }
 
     var actions = globals.Actions.init(tab.allocator);
     defer globals.Actions_deinit(&actions);
 
+    var first_run: bool = true;
+
+    var older = try filtered_paths.clone(tab.allocator);
+    defer older.deinit(tab.allocator);
+
     o: while (true) {
+        defer first_run = false;
+
         var buffered_overlay = std.io.bufferedWriter(std.io.getStdOut().writer());
         const overlay = buffered_overlay.writer();
 
         try overlay.writeAll(Style.Value(.ClearScreen));
         try overlay.writeAll(Style.Value(.HideCursor));
 
-        const filter = filtered_paths.items.len != 0 and box.input.items.len != 0;
-        var searched_paths = if (filter) v: {
-            var searched = std.ArrayListUnmanaged([]globals.Char){};
+        const re_filter = filtered_paths.items.len != 0 and !first_run and box.metadata.last_action == .Key;
+        const searched_paths = if (re_filter) v: {
+            const utf8_input = try unicode.toUtf8Alloc(tab.allocator, box.input.items);
+            defer tab.allocator.free(utf8_input);
+
+            if (utf8_input.len == 0) {
+                break :v try filtered_paths.clone(tab.allocator);
+            }
+
+            var searched = std.ArrayListUnmanaged([]const u8){};
             errdefer searched.deinit(tab.allocator);
 
             for (filtered_paths.items) |filetered_path| {
-                if (std.mem.containsAtLeast(globals.Char, filetered_path, 1, box.input.items)) {
+                if (std.mem.containsAtLeast(u8, filetered_path, 1, utf8_input)) {
                     try searched.append(tab.allocator, filetered_path);
                 }
             }
 
             break :v searched;
-        } else filtered_paths;
-        defer if (filter) searched_paths.deinit(tab.allocator);
+        } else older;
+
+        defer {
+            if (re_filter) {
+                older.deinit(tab.allocator);
+                older = searched_paths;
+            }
+        }
 
         if (box.input_cursor.y > searched_paths.items.len)
             box.input_cursor.y = globals.sub_1_ignore_overflow(searched_paths.items.len);
@@ -101,15 +121,12 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
 
         switch (try box.modify(input, searched_paths.items.len, &actions)) {
             .focus => {
-                if (searched_paths.items.len == 0) {
+                if (searched_paths.items.len == 0)
                     continue :o;
-                }
 
                 const focused = searched_paths.items[box.input_cursor.y];
-                const focused_utf8 = try unicode.toUtf8Alloc(tab.allocator, focused);
-                defer tab.allocator.free(focused_utf8);
 
-                const focused_absolute = try Tab.readable_filepath_cwd(tab.allocator, focused_utf8);
+                const focused_absolute = try Tab.readable_filepath_cwd(tab.allocator, focused);
                 defer tab.allocator.free(focused_absolute);
 
                 for (tabs.items) |t| {
@@ -125,7 +142,9 @@ pub fn open_file(tab: *Tab, tabs: *globals.Tabs) !globals.modify_response {
 
                 try tabs.append(new_tab);
 
-                return .{ .focus = tabs.items.len - 1 };
+                return .{
+                    .focus = tabs.items.len - 1,
+                };
             },
             .none => {},
             .exit => break :o,
@@ -158,9 +177,8 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
 
             try overlay.writeAll(Style.Value(.ClearScreen));
 
-            var splitted = try unicode.toSplittedUnicode(tab.allocator, buffer.items);
+            var splitted = try unicode.toSplittedUtf8(tab.allocator, buffer.items);
             defer splitted.deinit();
-            defer for (splitted.items) |splitter| tab.allocator.free(splitter);
 
             try tab.draw(tabs.*, overlay); // Draw the background
             try box.draw(splitted.items, overlay);
@@ -217,9 +235,8 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
                 try stderr_fifo.reader().readAllArrayList(&buffer, 1 << 21);
             }
 
-            var splitted = try unicode.toSplittedUnicode(tab.allocator, buffer.items);
+            var splitted = try unicode.toSplittedUtf8(tab.allocator, buffer.items);
             defer splitted.deinit();
-            defer for (splitted.items) |splitter| tab.allocator.free(splitter);
 
             try tab.draw(tabs.*, overlay); // Draw the background
             try box.draw(splitted.items, overlay);
@@ -228,4 +245,10 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
     }
 
     return try box.input.toOwnedSlice(tab.allocator);
+}
+
+inline fn ignore_specific_err(walker: *std.fs.Dir.Walker) !?std.fs.Dir.Walker.WalkerEntry {
+    var o = walker.next();
+    while (o == error.AccessDenied) : (o = walker.next()) {}
+    return o;
 }

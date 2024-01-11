@@ -60,6 +60,8 @@ The config file is in json format, here are the options:
 - [ ] Handle long box queries
 - [ ] Refractor input parsing (src/input.zig)
 - [ ] Refractor the code (to be more readable)
+- [ ] Resolve all To-Do's in the code
+- [ ] Clipboard support
 
 <sub>The tests were conducted on a Kitty terminal with Bash.</sub>
 <sub>Ctrl + Backspace does not work in the VSCode Terminal; this is not a bug.</sub>
