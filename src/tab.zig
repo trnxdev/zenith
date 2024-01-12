@@ -151,7 +151,7 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
     try stdout.writeByte('\n');
 
     const usable_rows = size.rows - 2;
-    const usable_cols = size.cols - 4;
+    const usable_cols = size.cols;
 
     var line_start = self.cursor.y;
 
@@ -172,7 +172,6 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
     callculate_scrolling(&start_line_txt, &corrected_x, usable_cols);
 
     for (self.lines.items[line_start..line_end], line_start + 1..) |line, i| {
-        const private_usable_cols = usable_cols - globals.num_strlen(i);
         const reserved_num_space = globals.num_strlen(self.lines_len()) + 3;
         const this_digit_len = globals.num_strlen(i);
 
@@ -227,7 +226,7 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
                             continue :inner;
                         }
 
-                        if (z > private_usable_cols - 2) {
+                        if (z > usable_cols - reserved_num_space - 3) {
                             try stdout.writeAll(Style.Value(.Reset));
                             try stdout.writeAll(Style.Value(.WhiteBG));
                             try stdout.writeByte('>');
