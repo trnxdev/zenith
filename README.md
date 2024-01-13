@@ -3,7 +3,7 @@
 ## Features:
 - **Syntax Highlighting** (poorly)
 - **Terminal Support** (poorly)
-- **Supports Linux And MacOS(?)**
+- **Supports Linux and MacOS(?)**
 
 ## Controls:
 - **Navigation:**
@@ -30,7 +30,7 @@
 - **Terminal:**
   - Ctrl + P to open it
 - **Exit:**
-  - Press Esc to exit the editor, the terminal (Ctrl + P), File Explorer (Ctrl + O) or the file-wide searcher
+  - Press Esc to [exit](https://stackoverflow.com/questions/11828270/how-do-i-exit-vim) the editor, the terminal (Ctrl + P), File Explorer (Ctrl + O) or the file-wide searcher
 
 ## Config
 By default it is stored in $USER/.zenith.json, you can override this by setting the $ZENITH_CONFIG_PATH
@@ -64,5 +64,5 @@ The config file is in json format, here are the options:
 - [ ] Resolve all To-Do's in the code
 - [ ] Clipboard support
 
-<sub>The tests were conducted on a Kitty terminal with Bash.</sub>
-<sub>Ctrl + Backspace does not work in the VSCode Terminal; this is not a bug.</sub>
+<sub>The tests were conducted on a Linux "kitty" terminal with Bash.</sub>
+<sub>Ctrl + Backspace does not work in the VSCode Terminal; This is a issue in the third party utility (VSCode).</sub>
