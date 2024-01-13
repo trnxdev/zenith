@@ -8,26 +8,25 @@ const Tab = @import("tab.zig");
 const Input = @import("input.zig");
 const Config = @import("conf.zig");
 
-comptime {
-    if (globals.os != .linux) {
-        // Only Linux is Supported
-        @compileError("Get better bro, https://archlinux.org");
-    }
-}
-
 pub fn main() !void {
     var gpa = if (globals.Debug) std.heap.GeneralPurposeAllocator(.{}){} else void{};
     const allocator = if (globals.Debug) gpa.allocator() else std.heap.c_allocator;
     defer _ = if (globals.Debug) gpa.deinit();
 
-    const old = try std.os.tcgetattr(globals.stdin_fd);
+    var old: std.c.termios = undefined;
+
+    if (std.c.tcgetattr(globals.stdin_fd, &old) == -1)
+        return error.TcGetAttrFailed;
+
     var new = old;
 
-    new.lflag &= ~(std.os.linux.ICANON | std.os.linux.ECHO | std.os.linux.ISIG);
-    new.iflag &= ~std.os.linux.IXON;
+    new.lflag &= ~(std.c.ICANON | std.c.ECHO | std.c.ISIG);
+    new.iflag &= ~std.c.IXON;
 
-    try std.os.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, new);
-    defer std.os.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, old) catch {};
+    if (std.c.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &new) == -1)
+        return error.TcSetAttrFailed;
+
+    defer _ = std.c.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &old);
     defer std.io.getStdOut().writeAll(Style.Value(.ClearScreen) ++ Style.Value(.ResetCursor)) catch {};
 
     var tabs = globals.Tabs.init(allocator);

@@ -8,8 +8,8 @@ pub fn main() !void {
     const old = try std.os.tcgetattr(stdin_fd);
     var new = old;
 
-    new.lflag &= ~(std.os.linux.ICANON | std.os.linux.ECHO | std.os.linux.ISIG);
-    new.iflag &= ~std.os.linux.IXON;
+    new.lflag &= ~(std.c.ICANON | std.c.ECHO | std.c.ISIG);
+    new.iflag &= ~std.c.IXON;
 
     try std.os.tcsetattr(stdin_fd, std.os.TCSA.FLUSH, new);
     defer std.os.tcsetattr(stdin_fd, std.os.TCSA.FLUSH, old) catch {};
