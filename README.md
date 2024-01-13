@@ -1,8 +1,9 @@
 # Zenith - A Text Editor Written in Zig
 
 ## Features:
-- **Syntax Highlighting:** (poorly)
-- **Terminal Support:** (poorly)
+- **Syntax Highlighting** (poorly)
+- **Terminal Support** (poorly)
+- **Supports Linux And MacOS(?)**
 
 ## Controls:
 - **Navigation:**
