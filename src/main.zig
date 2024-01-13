@@ -8,6 +8,18 @@ const Tab = @import("tab.zig");
 const Input = @import("input.zig");
 const Config = @import("conf.zig");
 
+var null_editor: globals.Editor = .{};
+const editor: *globals.Editor = &null_editor;
+
+pub fn resize(_: c_int) callconv(.C) void {
+    if (editor.init) {
+        if (editor.drawing.tryLock()) {
+            defer editor.drawing.unlock();
+            editor.tabs.items[editor.focused].draw(editor.tabs.*, std.io.getStdOut().writer()) catch {};
+        }
+    }
+}
+
 pub fn main() !void {
     var gpa = if (globals.Debug) std.heap.GeneralPurposeAllocator(.{}){} else void{};
     const allocator = if (globals.Debug) gpa.allocator() else std.heap.c_allocator;
@@ -46,33 +58,49 @@ pub fn main() !void {
     };
     defer if (config) |c| c.deinit();
 
-    var editor: globals.Editor = .{
-        .tabs = &tabs,
-        .config = if (config) |c| c.value else Config.Value{},
-    };
-
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
+    var draw = std.Thread.Mutex{};
+    editor.* = .{
+        .tabs = &tabs,
+        .drawing = &draw,
+        .config = if (config) |c| c.value else Config.Value{},
+        .init = true,
+        .focused = 0,
+    };
+
     var tab = if (args.len >= 2) v: {
         const file_path = args[1];
-        break :v try Tab.open_from_file(allocator, 0, file_path, &editor);
+        break :v try Tab.open_from_file(allocator, 0, file_path, editor);
     } else brk: {
-        const inside_tab = try Tab.create(allocator, 0, &editor);
+        const inside_tab = try Tab.create(allocator, 0, editor);
         try inside_tab.lines.append(globals.Line{}); // A tab requires atleast one line
         break :brk inside_tab;
     };
     try tabs.append(tab);
 
+    try std.os.sigaction(std.os.SIG.WINCH, &std.os.Sigaction{
+        .handler = .{ .handler = &resize },
+        .mask = std.os.empty_sigset,
+        .flags = 0,
+    }, null);
+
     o: while (true) {
+        editor.drawing.lock();
         try tab.draw(tabs, std.io.getStdOut().writer());
+        editor.drawing.unlock();
 
         const input = try Input.parseStdin();
+
+        editor.drawing.lock();
+        defer editor.drawing.unlock();
 
         switch (try tab.modify(&tabs, input)) {
             .none => continue :o,
             .exit => break :o,
             .focus => |i| {
+                editor.focused = i;
                 tab = tabs.items[i];
             },
         }

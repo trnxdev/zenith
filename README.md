@@ -50,6 +50,11 @@ The config file is in json format, here are the options:
 - [ ] Add more config options
   - [ ] When to scroll the line option in Config
       - Middle, MiddleEnd, End (?)
+  - [ ] Ctrl + O behaviour
+      - Use .vignore only
+      - Use .gitignore only
+      - Use both?
+      - Use only (number) levels deep (.gitignore or .vignore or both)
 - [ ] Colors to the terminal (Ctrl + P)
 - [ ] .gitignore support for Ctrl + O
 - [ ] Implement Ctrl + Y for Redo
@@ -61,7 +66,7 @@ The config file is in json format, here are the options:
 - [ ] Handle long box queries
 - [ ] Refractor input parsing (src/input.zig)
 - [ ] Refractor the code (to be more readable)
-- [ ] Resolve all To-Do's in the code
+- [ ] Resolve all To-Do's iside the codebase
 - [ ] Clipboard support
 
 <sub>The tests were conducted on a Linux "kitty" terminal with Bash.</sub>

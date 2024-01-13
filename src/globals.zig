@@ -33,7 +33,13 @@ pub const modify_response = union(enum) {
 };
 pub const Tabs = std.ArrayList(*Tab);
 pub const Actions = std.ArrayList(Action);
-pub const Editor = struct { tabs: *Tabs, config: Config.Value };
+pub const Editor = struct {
+    tabs: *Tabs = undefined,
+    drawing: *std.Thread.Mutex = undefined,
+    config: Config.Value = .{},
+    init: bool = false,
+    focused: usize = 0,
+};
 
 pub fn undo(allocator: std.mem.Allocator, line: *Line, cursor: *Cursor, saved: *bool, actions: *Actions, external: anytype) !modify_response {
     if (actions.items.len == 0) {

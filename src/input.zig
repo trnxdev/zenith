@@ -56,23 +56,6 @@ pub const Modifiers = enum {
     }
 };
 
-// zig fmt: off
-const utf8_decode_error =
-    std.unicode.Utf8DecodeError
-||  error { CharNotFound };
-// zig fmt: on
-fn utf8Decode(bytes: []const u8) utf8_decode_error!u21 {
-    return switch (bytes.len) {
-        1 => @as(u21, bytes[0]),
-        2 => std.unicode.utf8Decode2(bytes),
-        3 => std.unicode.utf8Decode3(bytes),
-        4 => std.unicode.utf8Decode4(bytes),
-        else => return utf8_decode_error.CharNotFound,
-    };
-}
-
-const control_code = std.ascii.control_code;
-
 const parse_stdin_error = std.os.ReadError || parse_error;
 pub inline fn parseStdin() parse_stdin_error!@This() {
     var buf: [8]u8 = undefined;
@@ -80,6 +63,7 @@ pub inline fn parseStdin() parse_stdin_error!@This() {
     return parse(buf[0..read]);
 }
 
+const control_code = std.ascii.control_code;
 const parse_error = unicode.decode_error;
 pub fn parse(buf: []const u8) parse_error!@This() {
     return switch (buf[0]) {
@@ -102,17 +86,21 @@ pub fn parse(buf: []const u8) parse_error!@This() {
         control_code.lf => Input.new(.None, .enter),
         // Ctrl-()
         control_code.bs => Input.new(.Ctrl, .backspace),
+        control_code.soh => Input.newChar(.Ctrl, 'a'),
+        control_code.stx => Input.newChar(.Ctrl, 'b'),
+        control_code.etx => Input.newChar(.Ctrl, 'c'),
+        control_code.eot => Input.newChar(.Ctrl, 'd'),
+        control_code.enq => Input.newChar(.Ctrl, 'e'),
+        control_code.ack => Input.newChar(.Ctrl, 'f'),
+        control_code.bel => Input.newChar(.Ctrl, 'g'),
         control_code.vt => Input.newChar(.Ctrl, 'k'),
         control_code.ff => Input.newChar(.Ctrl, 'l'),
         control_code.so => Input.newChar(.Ctrl, 'n'),
         control_code.si => Input.newChar(.Ctrl, 'o'),
-        control_code.etx => Input.newChar(.Ctrl, 'c'),
-        control_code.dc3 => Input.newChar(.Ctrl, 's'),
         control_code.dle => Input.newChar(.Ctrl, 'p'),
+        control_code.dc3 => Input.newChar(.Ctrl, 's'),
         control_code.etb => Input.newChar(.Ctrl, 'w'),
         control_code.sub => Input.newChar(.Ctrl, 'z'),
-        control_code.eot => Input.newChar(.Ctrl, 'd'),
-        control_code.ack => Input.newChar(.Ctrl, 'f'),
         // Default
         else => Input.newChar(.None, try unicode.decode(buf)),
     };
@@ -149,9 +137,7 @@ inline fn str(comptime control: comptime_int) []const u8 {
 
 inline fn str_fill(comptime control: comptime_int, comptime fill: []const u8) []const u8 {
     var filled = [_]u8{0} ** (fill.len + 1);
-
     filled[0] = control;
     std.mem.copyForwards(u8, filled[1..], fill);
-
     return &filled;
 }
