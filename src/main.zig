@@ -13,20 +13,20 @@ pub fn main() !void {
     const allocator = if (globals.Debug) gpa.allocator() else std.heap.c_allocator;
     defer _ = if (globals.Debug) gpa.deinit();
 
-    var old: std.c.termios = undefined;
+    var old: globals.system.termios = undefined;
 
-    if (std.c.tcgetattr(globals.stdin_fd, &old) == -1)
+    if (globals.system.tcgetattr(globals.stdin_fd, &old) == -1)
         return error.TcGetAttrFailed;
 
     var new = old;
 
-    new.lflag &= ~(std.c.ICANON | std.c.ECHO | std.c.ISIG);
-    new.iflag &= ~std.c.IXON;
+    new.lflag &= ~(globals.system.ICANON | globals.system.ECHO | globals.system.ISIG);
+    new.iflag &= ~(globals.system.IXON);
 
-    if (std.c.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &new) == -1)
+    if (globals.system.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &new) == -1)
         return error.TcSetAttrFailed;
 
-    defer _ = std.c.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &old);
+    defer _ = globals.system.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &old);
     defer std.io.getStdOut().writeAll(Style.Value(.ClearScreen) ++ Style.Value(.ResetCursor)) catch {};
 
     var tabs = globals.Tabs.init(allocator);

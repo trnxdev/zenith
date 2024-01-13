@@ -16,6 +16,10 @@ pub const Char = u21;
 pub const Line = std.ArrayListUnmanaged(Char);
 pub const Lines = std.ArrayList(Line);
 
+pub const system = switch (builtin.os.tag) {
+    .linux => std.os.linux,
+    else => std.c,
+};
 pub const Direction = enum {
     Up,
     Down,
@@ -193,8 +197,8 @@ const TerminalSize = packed struct {
     cols: usize,
 };
 pub fn getTerminalSize() GetTerminalSizeError!TerminalSize {
-    var size: std.c.winsize = undefined;
-    const res = std.c.ioctl(stdin_fd, std.c.T.IOCGWINSZ, @intFromPtr(&size));
+    var size: system.winsize = undefined;
+    const res = system.ioctl(stdin_fd, system.T.IOCGWINSZ, @intFromPtr(&size));
 
     if (res != 0) {
         return GetTerminalSizeError.RequestFailed;

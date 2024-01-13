@@ -1,6 +1,11 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const stdin_fd = std.io.getStdIn().handle;
+const system = switch (builtin.os.tag) {
+    .linux => std.os.linux,
+    else => std.c,
+};
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -8,8 +13,8 @@ pub fn main() !void {
     const old = try std.os.tcgetattr(stdin_fd);
     var new = old;
 
-    new.lflag &= ~(std.c.ICANON | std.c.ECHO | std.c.ISIG);
-    new.iflag &= ~std.c.IXON;
+    new.lflag &= ~(system.ICANON | system.ECHO | system.ISIG);
+    new.iflag &= ~(system.IXON);
 
     try std.os.tcsetattr(stdin_fd, std.os.TCSA.FLUSH, new);
     defer std.os.tcsetattr(stdin_fd, std.os.TCSA.FLUSH, old) catch {};
@@ -22,7 +27,7 @@ pub fn main() !void {
 
         try std.fs.cwd().writeFile("key.txt", joined);
 
-        if (buf[0] == std.ascii.control_code.esc)
+        if (read == 1 and buf[0] == std.ascii.control_code.esc)
             return;
     }
 }
