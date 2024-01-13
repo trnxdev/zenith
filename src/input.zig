@@ -1,5 +1,6 @@
 const std = @import("std");
 const globals = @import("globals.zig");
+const unicode = @import("unicode.zig");
 
 const Input = @This();
 
@@ -18,19 +19,13 @@ pub inline fn newChar(comptime mod: Modifiers, char: globals.Char) @This() {
     return .{ .modifiers = mod, .key = .{ .char = char } };
 }
 
-// TODO: make this better
 pub fn isHotBind(self: @This(), comptime mod: Modifiers, char: globals.Char) bool {
     comptime {
-        if (mod == .None) {
+        if (mod == .None)
             @compileError("Are you for real?");
-        }
     }
 
-    return switch (mod) {
-        .Ctrl => self.modifiers.isCtrl() and self.key == .char and self.key.char == char,
-        .Alt => self.modifiers.isAlt() and self.key == .char and self.key.char == char,
-        .None => @compileError("Are you for real?"),
-    };
+    return self.modifiers.is(mod) and self.key == .char and self.key.char == char;
 }
 
 pub const Key = union(enum) {
@@ -45,14 +40,19 @@ pub const Key = union(enum) {
 pub const Modifiers = enum {
     Ctrl,
     Alt,
+    CtrlAlt,
     None,
 
-    pub inline fn isCtrl(self: @This()) bool {
-        return self == .Ctrl;
+    pub inline fn is(self: @This(), comptime mod: Modifiers) bool {
+        return self == mod;
     }
 
-    pub inline fn isAlt(self: @This()) bool {
-        return self == .Alt;
+    pub inline fn hasCtrl(self: @This()) bool {
+        return self.is(.Ctrl) or self.is(.CtrlAlt);
+    }
+
+    pub inline fn hasAlt(self: @This()) bool {
+        return self.is(.Alt) or self.is(.CtrlAlt);
     }
 };
 
@@ -71,50 +71,77 @@ fn utf8Decode(bytes: []const u8) utf8_decode_error!u21 {
     };
 }
 
-pub fn parseStdin() !@This() {
+const control_code = std.ascii.control_code;
+
+const parse_stdin_error = std.os.ReadError || parse_error;
+pub inline fn parseStdin() parse_stdin_error!@This() {
     var buf: [8]u8 = undefined;
     const read = try std.io.getStdIn().reader().read(&buf);
-    return Inputs.get(buf[0..read]) orelse Input.newChar(.None, try std.unicode.utf8Decode(buf[0..read]));
+    return parse(buf[0..read]);
 }
 
-// zig fmt: off
-const Inputs = std.ComptimeStringMap(@This(), .{
-    .{ str(std.ascii.control_code.esc), Input.new(.None, .escape    ) },
-    .{ str(std.ascii.control_code.del), Input.new(.None, .backspace ) },
-    .{ str(std.ascii.control_code.ht),  Input.new(.None, .tab       ) },
-    .{ str(std.ascii.control_code.lf),  Input.new(.None, .enter     ) },
-    // Alt-()
-    .{ str_fill(std.ascii.control_code.esc, &.{'j'}), Input.newChar(.Alt, 'j') },
-    // Ctrl-()
-    .{ str(std.ascii.control_code.bs),  Input.new(.Ctrl, .backspace) },
-    .{ str(std.ascii.control_code.vt),  Input.newChar(.Ctrl, 'k')   },
-    .{ str(std.ascii.control_code.ff),  Input.newChar(.Ctrl, 'l')   },
-    .{ str(std.ascii.control_code.so),  Input.newChar(.Ctrl, 'n')   },
-    .{ str(std.ascii.control_code.si),  Input.newChar(.Ctrl, 'o')   },
-    .{ str(std.ascii.control_code.etx), Input.newChar(.Ctrl, 'c')   },
-    .{ str(std.ascii.control_code.dc3), Input.newChar(.Ctrl, 's')   },
-    .{ str(std.ascii.control_code.dle), Input.newChar(.Ctrl, 'p')   },
-    .{ str(std.ascii.control_code.etb), Input.newChar(.Ctrl, 'w')   },
-    .{ str(std.ascii.control_code.sub), Input.newChar(.Ctrl, 'z')   },
-    .{ str(std.ascii.control_code.eot), Input.newChar(.Ctrl, 'd')   },
-    .{ str(std.ascii.control_code.ack), Input.newChar(.Ctrl, 'f')   },
-    // Arrows
-    .{ "\x1b[A", Input.newArrow(.None, .Up)    },
-    .{ "\x1b[B", Input.newArrow(.None, .Down)  },
-    .{ "\x1b[C", Input.newArrow(.None, .Right) },
-    .{ "\x1b[D", Input.newArrow(.None, .Left)  },
-    // Ctrl-Arrows
-    .{ "\x1b[1;5A", Input.newArrow(.Ctrl, .Up )    },
-    .{ "\x1b[1;5B", Input.newArrow(.Ctrl, .Down )  },
-    .{ "\x1b[1;5C", Input.newArrow(.Ctrl, .Right ) },
-    .{ "\x1b[1;5D", Input.newArrow(.Ctrl, .Left )  },
-    // Alt-Arrows
-    .{ "\x1b[1;3A", Input.newArrow(.Alt, .Up)    },
-    .{ "\x1b[1;3B", Input.newArrow(.Alt, .Down)  },
-    .{ "\x1b[1;3C", Input.newArrow(.Alt, .Right) },
-    .{ "\x1b[1;3D", Input.newArrow(.Alt, .Left)  },
+const parse_error = unicode.decode_error;
+pub fn parse(buf: []const u8) parse_error!@This() {
+    return switch (buf[0]) {
+        // Esc + (Alt, Ctrl or Normal-(Arrow)) +  Alt-(Ctrl-() or ())
+        control_code.esc => if (buf.len == 1)
+            Input.new(.None, .escape)
+        else {
+            // (Alt, Ctrl or Normal-(Arrow))
+            return Arrows.get(buf[1..]) orelse {
+                // Alt-(Ctrl-() or ())
+                // In case, it's ctrl + alt, it's formatted like: [Alt][Ctrl Sequence]
+                var char = try parse(buf[1..]);
+                char.modifiers = if (char.modifiers.hasCtrl()) .CtrlAlt else .Alt;
+                return char;
+            };
+        },
+        // General
+        control_code.del => Input.new(.None, .backspace),
+        control_code.ht => Input.new(.None, .tab),
+        control_code.lf => Input.new(.None, .enter),
+        // Ctrl-()
+        control_code.bs => Input.new(.Ctrl, .backspace),
+        control_code.vt => Input.newChar(.Ctrl, 'k'),
+        control_code.ff => Input.newChar(.Ctrl, 'l'),
+        control_code.so => Input.newChar(.Ctrl, 'n'),
+        control_code.si => Input.newChar(.Ctrl, 'o'),
+        control_code.etx => Input.newChar(.Ctrl, 'c'),
+        control_code.dc3 => Input.newChar(.Ctrl, 's'),
+        control_code.dle => Input.newChar(.Ctrl, 'p'),
+        control_code.etb => Input.newChar(.Ctrl, 'w'),
+        control_code.sub => Input.newChar(.Ctrl, 'z'),
+        control_code.eot => Input.newChar(.Ctrl, 'd'),
+        control_code.ack => Input.newChar(.Ctrl, 'f'),
+        // Default
+        else => Input.newChar(.None, try unicode.decode(buf)),
+    };
+}
+
+// They do not include Escape Sequence at the start! ("\x1b")
+// TODO: Get rid of this
+const Arrows = std.ComptimeStringMap(Input, .{
+    // Regular Arrows
+    .{ "[A", Input.newArrow(.None, .Up) },
+    .{ "[B", Input.newArrow(.None, .Down) },
+    .{ "[C", Input.newArrow(.None, .Right) },
+    .{ "[D", Input.newArrow(.None, .Left) },
+    // Ctrl-Alt Arrows
+    .{ "[1;7A", Input.newArrow(.CtrlAlt, .Up) },
+    .{ "[1;7B", Input.newArrow(.CtrlAlt, .Down) },
+    .{ "[1;7C", Input.newArrow(.CtrlAlt, .Right) },
+    .{ "[1;7D", Input.newArrow(.CtrlAlt, .Left) },
+    // Ctrl Arrows
+    .{ "[1;5A", Input.newArrow(.Ctrl, .Up) },
+    .{ "[1;5B", Input.newArrow(.Ctrl, .Down) },
+    .{ "[1;5C", Input.newArrow(.Ctrl, .Right) },
+    .{ "[1;5D", Input.newArrow(.Ctrl, .Left) },
+    // Alt Arrows
+    .{ "[1;3A", Input.newArrow(.Alt, .Up) },
+    .{ "[1;3B", Input.newArrow(.Alt, .Down) },
+    .{ "[1;3C", Input.newArrow(.Alt, .Right) },
+    .{ "[1;3D", Input.newArrow(.Alt, .Left) },
 });
-// zig fmt: on
 
 inline fn str(comptime control: comptime_int) []const u8 {
     comptime return &[_]u8{control};

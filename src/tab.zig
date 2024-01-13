@@ -234,7 +234,7 @@ pub fn draw(self: *@This(), tabs: globals.Tabs, writer: anytype) !void {
                             break :inner;
                         }
 
-                        try stdout.writeAll(try unicode.decode(c));
+                        try stdout.writeAll(try unicode.encode(c));
                     },
                     inline .col => |c| {
                         try stdout.writeAll(Style.Value(c));
@@ -339,7 +339,7 @@ pub fn save(self: *@This()) !globals.modify_response {
 
     for (self.lines.items, 0..) |line, i| {
         for (line.items) |c| {
-            try buffered_file.writer().writeAll(try unicode.decode(c));
+            try buffered_file.writer().writeAll(try unicode.encode(c));
         }
 
         if (i != self.lines.items.len - 1) {
@@ -532,7 +532,7 @@ pub fn modify(self: *@This(), tabs: *globals.Tabs, input: Input) anyerror!global
 
     switch (input.key) {
         .arrow => |a| {
-            if (input.modifiers.isAlt() and (a == .Up or a == .Down)) {
+            if (input.modifiers.hasAlt() and (a == .Up or a == .Down)) {
                 if (!self.can_move(a))
                     return .none;
 

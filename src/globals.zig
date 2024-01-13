@@ -127,7 +127,7 @@ pub fn modify_line(
 
             saved.* = false;
 
-            if (input.modifiers.isCtrl()) {
+            if (input.modifiers.hasCtrl()) {
                 const old = cursor.x;
                 cursor.ctrl_move(line, .Left);
                 const now = cursor.x;
@@ -177,7 +177,7 @@ pub fn modify_line(
             if (a == .Up or a == .Down)
                 return .none;
 
-            if (input.modifiers.isCtrl()) {
+            if (input.modifiers.is(.Ctrl)) {
                 cursor.ctrl_move(line, a);
             } else {
                 cursor.move(1, line.items.len, a);
@@ -188,7 +188,9 @@ pub fn modify_line(
     return .none;
 }
 
-pub const stdin_fd = std.io.getStdIn().handle;
+pub const stdin = std.io.getStdIn();
+pub const stdin_fd = stdin.handle;
+pub const stdin_reader = stdin.reader();
 pub const os = builtin.os.tag;
 
 const GetTerminalSizeError = error{RequestFailed};
@@ -267,7 +269,7 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
         try std.io.getStdOut().writeAll(text);
 
         for (line.items) |c| {
-            try std.io.getStdOut().writeAll(try unicode.decode(c));
+            try std.io.getStdOut().writeAll(try unicode.encode(c));
         }
 
         try std.io.getStdOut().writer().print("\x1b[{};{}H", .{ cursor.y, cursor.x + text.len + 1 });
@@ -287,4 +289,9 @@ pub fn text_prompt(allocator: std.mem.Allocator, text: []const u8) !?[]Char {
     }
 
     return try line.toOwnedSlice(allocator);
+}
+
+pub const assertion_error = error{AssertionFailed};
+pub inline fn err_assert(ok: bool) assertion_error!void {
+    if (!ok) return assertion_error.AssertionFailed;
 }
