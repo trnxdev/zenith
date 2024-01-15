@@ -14,7 +14,7 @@ in stdenv.mkDerivation {
 
   src = ./..;
 
-  nativeBuildInputs = [ zig ];
+  packages = [ zig ];
   buildInputs = [ glibc ];
 
   dontConfigure = true;
