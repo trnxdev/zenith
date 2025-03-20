@@ -27,7 +27,7 @@ pub fn parseDefault(allocator: std.mem.Allocator) !parse_default_result {
         switch (e) {
             std.process.GetEnvVarOwnedError.EnvironmentVariableNotFound => {
                 break :brk try std.fs.path.join(allocator, &.{
-                    std.os.getenv("HOME") orelse return error.HomeEnvNotFound,
+                    std.posix.getenv("HOME") orelse return error.HomeEnvNotFound,
                     ".zenith.json",
                 });
             },

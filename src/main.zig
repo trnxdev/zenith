@@ -32,13 +32,20 @@ pub fn main() !void {
 
     var new = old;
 
-    new.lflag &= ~(globals.system.ICANON | globals.system.ECHO | globals.system.ISIG);
-    new.iflag &= ~(globals.system.IXON);
+    new.lflag = .{
+        .ICANON = false,
+        .ECHO = false,
+        .ISIG = false,
+    };
 
-    if (globals.system.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &new) == -1)
+    new.iflag = .{
+        .IXON = false,
+    };
+
+    if (globals.system.tcsetattr(globals.stdin_fd, globals.system.TCSA.FLUSH, &new) == -1)
         return error.TcSetAttrFailed;
 
-    defer _ = globals.system.tcsetattr(globals.stdin_fd, std.os.TCSA.FLUSH, &old);
+    defer _ = globals.system.tcsetattr(globals.stdin_fd, globals.system.TCSA.FLUSH, &old);
     defer std.io.getStdOut().writeAll(Style.Value(.ClearScreen) ++ Style.Value(.ResetCursor)) catch {};
 
     var tabs = globals.Tabs.init(allocator);
@@ -80,9 +87,10 @@ pub fn main() !void {
     };
     try tabs.append(tab);
 
-    try std.os.sigaction(std.os.SIG.WINCH, &std.os.Sigaction{
+    // This does some handling for edge cases
+    std.posix.sigaction(globals.system.SIG.WINCH, &globals.system.Sigaction{
         .handler = .{ .handler = &resize },
-        .mask = std.os.empty_sigset,
+        .mask = globals.system.empty_sigset,
         .flags = 0,
     }, null);
 

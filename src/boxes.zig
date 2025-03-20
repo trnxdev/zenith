@@ -207,7 +207,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
             try argv.append(unicode_s);
         }
 
-        var process = std.ChildProcess.init(argv.items, tab.allocator);
+        var process = std.process.Child.init(argv.items, tab.allocator);
         process.stdout_behavior = .Pipe;
         process.stderr_behavior = .Pipe;
         process.stdin_behavior = .Close;
@@ -247,7 +247,7 @@ pub fn terminal(tab: *Tab, tabs: *globals.Tabs) ![]globals.Char {
     return try box.input.toOwnedSlice(tab.allocator);
 }
 
-inline fn ignore_specific_err(walker: *std.fs.Dir.Walker) !?std.fs.Dir.Walker.WalkerEntry {
+inline fn ignore_specific_err(walker: *std.fs.Dir.Walker) !?std.fs.Dir.Walker.Entry {
     var o = walker.next();
     while (o == error.AccessDenied) : (o = walker.next()) {}
     return o;

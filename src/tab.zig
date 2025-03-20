@@ -77,7 +77,7 @@ pub fn open_from_file(allocator: std.mem.Allocator, index: usize, path: []u8, ed
         try tab.lines.append(globals.Line{});
 
     // I wish there was std.fs.File.realpathAlloc
-    var fpat: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    var fpat: [std.fs.max_path_bytes]u8 = undefined;
     const fd_path = try std.os.getFdPath(file.handle, &fpat);
     tab.filepath = try allocator.dupe(u8, fd_path);
     errdefer allocator.free(tab.filepath.?);

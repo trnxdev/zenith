@@ -56,7 +56,7 @@ pub const Modifiers = enum {
     }
 };
 
-const parse_stdin_error = std.os.ReadError || parse_error;
+const parse_stdin_error = std.fs.File.ReadError || parse_error;
 pub inline fn parseStdin() parse_stdin_error!@This() {
     var buf: [8]u8 = undefined;
     const read = try std.io.getStdIn().reader().read(&buf);
@@ -108,7 +108,7 @@ pub fn parse(buf: []const u8) parse_error!@This() {
 
 // They do not include Escape Sequence at the start! ("\x1b")
 // TODO: Get rid of this
-const Arrows = std.ComptimeStringMap(Input, .{
+const Arrows = std.StaticStringMap(Input).initComptime(.{
     // Regular Arrows
     .{ "[A", Input.newArrow(.None, .Up) },
     .{ "[B", Input.newArrow(.None, .Down) },

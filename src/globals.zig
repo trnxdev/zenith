@@ -72,7 +72,7 @@ pub fn undo(allocator: std.mem.Allocator, line: *Line, cursor: *Cursor, saved: *
                     external,
                 );
                 if (actions.getLast() == .del_char) {
-                    Action_deinit(allocator, actions.pop());
+                    Action_deinit(allocator, actions.pop() orelse unreachable);
                 }
             }
 
@@ -102,7 +102,7 @@ pub fn undo(allocator: std.mem.Allocator, line: *Line, cursor: *Cursor, saved: *
                     external,
                 );
                 if (actions.getLast() == .insert_char) {
-                    Action_deinit(allocator, actions.pop());
+                    Action_deinit(allocator, actions.pop() orelse unreachable);
                 }
             }
 
@@ -205,7 +205,7 @@ const TerminalSize = packed struct {
     cols: usize,
 };
 pub fn getTerminalSize() GetTerminalSizeError!TerminalSize {
-    var size: system.winsize = undefined;
+    var size: std.posix.winsize = undefined;
     const res = system.ioctl(stdin_fd, system.T.IOCGWINSZ, @intFromPtr(&size));
 
     if (res != 0) {
@@ -213,8 +213,8 @@ pub fn getTerminalSize() GetTerminalSizeError!TerminalSize {
     }
 
     return .{
-        .rows = @intCast(size.ws_row),
-        .cols = @intCast(size.ws_col),
+        .rows = @intCast(size.row),
+        .cols = @intCast(size.col),
     };
 }
 
@@ -250,7 +250,7 @@ pub fn Action_deinit(allocator: std.mem.Allocator, ac: Action) void {
 }
 
 pub fn Actions_deinit(actions: *Actions) void {
-    while (actions.popOrNull()) |ac| {
+    while (actions.pop()) |ac| {
         Action_deinit(actions.allocator, ac);
     }
 

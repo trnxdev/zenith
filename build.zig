@@ -6,14 +6,15 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "zenith",
-        .root_source_file = .{ .path = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
-    if (optimize != .Debug and target.result.os.tag == .linux) {
+    if (optimize != .Debug)
         exe.linkLibC();
-    }
 
     b.installArtifact(exe);
 

@@ -4,7 +4,7 @@ const Style = @import("styles.zig");
 const globals = @import("globals.zig");
 const unicode = @import("unicode.zig");
 
-pub const Keywords = std.ComptimeStringMap(Style.Enum, .{
+pub const Keywords = std.StaticStringMap(Style.Enum).initComptime(.{
     .{ "fn", .Blue },
     .{ "func", .Blue },
     .{ "fun", .Blue },
